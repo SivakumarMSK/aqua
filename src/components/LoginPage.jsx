@@ -32,10 +32,11 @@ const LoginPage = () => {
     setError('');
 
     try {
+      const normalizedEmail = (email || '').trim().toLowerCase();
       const response = await fetch("/backend/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ email: normalizedEmail, password }),
       });
 
       const data = await response.json();
@@ -45,7 +46,7 @@ const LoginPage = () => {
         // ✅ Store JWT and remember email if selected
         if (rememberMe) {
           localStorage.setItem("authToken", data.access_token);
-          localStorage.setItem("rememberedEmail", email);
+          localStorage.setItem("rememberedEmail", normalizedEmail);
           localStorage.setItem("rememberMe", "true");
         } else {
           sessionStorage.setItem("authToken", data.access_token);

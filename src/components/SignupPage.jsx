@@ -131,7 +131,10 @@ const SignupPage = () => {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(formData), // ✅ send form data
+        body: JSON.stringify({
+          ...formData,
+          email: (formData.email || '').trim().toLowerCase()
+        }), // ✅ normalized email
       });
 
       const data = await response.json();
@@ -154,7 +157,10 @@ const SignupPage = () => {
           // Clear any existing data before storing new user profile
           localStorage.clear();
           sessionStorage.clear();
-          localStorage.setItem("userProfile", JSON.stringify(formData));
+          localStorage.setItem("userProfile", JSON.stringify({
+            ...formData,
+            email: (formData.email || '').trim().toLowerCase()
+          }));
           navigate('/login');
         });
       } else {
