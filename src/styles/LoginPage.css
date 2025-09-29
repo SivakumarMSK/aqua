@@ -1,0 +1,332 @@
+.login-container {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #f6f9ff 0%, #e9f5ff 100%);
+  background-image: 
+    linear-gradient(135deg, #f6f9ff 0%, #e9f5ff 100%),
+    url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%230059ff' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+  padding: 20px;
+  box-sizing: border-box;
+}
+
+.login-card {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  border-radius: 20px;
+  padding: 36px 32px;
+  width: 100%;
+  max-width: 420px;
+  min-width: 320px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  border: 1px solid rgba(0, 89, 255, 0.08);
+}
+
+.login-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.login-logo {
+  width: 100px;
+  height: 100px;
+  margin-bottom: 18px;
+  object-fit: cover;
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+  border-radius: 50%;
+}
+
+.login-title {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: #1a1f36;
+  margin-bottom: 6px;
+  text-align: center;
+}
+
+.login-subtitle {
+  font-size: 1rem;
+  color: #4f566b;
+  margin-top: 2px;
+}
+
+.login-form {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.input-group {
+  position: relative;
+  width: 100%;
+}
+
+.input-icon {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #0059FF;
+  font-size: 1.2rem;
+  pointer-events: none;
+}
+
+.password-toggle {
+  position: absolute;
+  right: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  padding: 0;
+  color: #0059FF;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.7;
+  transition: opacity 0.2s;
+}
+
+.password-toggle:hover {
+  opacity: 1;
+}
+
+.login-input {
+  width: 100%;
+  padding: 12px 36px;
+  border: 2px solid #e1edff;
+  border-radius: 10px;
+  font-size: 0.95rem;
+  outline: none;
+  transition: all 0.2s ease;
+  background: #ffffff;
+}
+
+.login-input[type="password"] {
+  padding-right: 40px;
+}
+
+.login-input:hover {
+  border-color: #cce3ff;
+  background: #fafcff;
+}
+
+.login-input:focus {
+  border-color: #0059FF;
+  background: #ffffff;
+}
+
+.login-row-between {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  width: 100%;
+  margin-top: 4px;
+}
+
+.login-remember {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.95rem;
+  color: #4f566b;
+  user-select: none;
+}
+
+.login-remember input[type="checkbox"] {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 18px;
+  height: 18px;
+  border: 2px solid #e1edff;
+  border-radius: 4px;
+  outline: none;
+  cursor: pointer;
+  position: relative;
+  transition: all 0.2s ease;
+  background: #ffffff;
+}
+
+.login-remember input[type="checkbox"]:checked {
+  background: #0059FF;
+  border-color: #0059FF;
+}
+
+.login-remember input[type="checkbox"]:checked::after {
+  content: '';
+  position: absolute;
+  left: 5px;
+  top: 2px;
+  width: 4px;
+  height: 8px;
+  border: solid white;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
+.login-remember input[type="checkbox"]:hover {
+  border-color: #0059FF;
+}
+
+.forgot-password {
+  color: #0059FF;
+  font-size: 0.98rem;
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.forgot-password:hover {
+  color: #0043cc;
+  text-decoration: underline;
+}
+
+.login-btn {
+  width: 100%;
+  padding: 12px 0;
+  background: linear-gradient(135deg, #0059FF 0%, #0043cc 100%);
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.login-btn:hover {
+  transform: translateY(-1px);
+}
+
+.login-btn:active {
+  transform: translateY(1px);
+}
+
+.login-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+  transform: none;
+}
+
+@keyframes loading-dots {
+  0% { content: '.'; }
+  33% { content: '..'; }
+  66% { content: '...'; }
+}
+
+.login-btn[disabled]:after {
+  content: '.';
+  animation: loading-dots 1.5s infinite;
+  width: 20px;
+  text-align: left;
+  display: inline-block;
+}
+
+.login-error {
+  color: #ff3b3b;
+  font-size: 0.95rem;
+  text-align: center;
+  margin-bottom: 8px;
+}
+
+.login-signup-text {
+  margin-top: 8px;
+  font-size: 1rem;
+  color: #000e1f;
+  text-align: center;
+}
+
+.signup-link {
+  color: #0059FF;
+  text-decoration: none;
+  font-weight: 500;
+  margin-left: 4px;
+}
+
+.signup-link:hover {
+  text-decoration: underline;
+  color: #0043cc;
+}
+
+@media (max-width: 600px) {
+  .login-container {
+    padding: 16px;
+    align-items: flex-start;
+  }
+
+  .login-card {
+    padding: 28px 20px;
+    max-width: 100%;
+    min-width: unset;
+    border-radius: 16px;
+  }
+
+  .login-header {
+    margin-bottom: 20px;
+  }
+
+  .login-logo {
+    width: 80px;
+    height: 80px;
+    margin-bottom: 18px;
+    object-fit: cover;
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+    border-radius: 50%;
+  }
+
+  .login-title {
+    font-size: 1.4rem;
+  }
+
+  .login-subtitle {
+    font-size: 0.9rem;
+  }
+
+  .login-input {
+    padding: 10px 32px;
+    font-size: 0.9rem;
+  }
+
+  .login-row-between {
+    flex-direction: column;
+    gap: 16px;
+    align-items: flex-start;
+  }
+
+  .login-remember {
+    width: 100%;
+  }
+
+  .forgot-password {
+    width: 100%;
+    text-align: left;
+  }
+
+  .login-btn {
+    padding: 10px 0;
+    font-size: 0.95rem;
+  }
+
+  .login-signup-text {
+    font-size: 0.95rem;
+  }
+}

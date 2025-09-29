@@ -1,0 +1,629 @@
+import { jsPDF } from 'jspdf';
+import autoTable from 'jspdf-autotable';
+
+// Professional PDF styling constants
+const PDF_STYLES = {
+  // Font sizes
+  TITLE: 18,
+  SECTION_HEADER: 12,
+  SUBSECTION_HEADER: 10,
+  BODY_TEXT: 9,
+  FOOTER: 8,
+  
+  // Colors (RGB)
+  PRIMARY: [44, 62, 80],      // Dark blue
+  SECONDARY: [52, 152, 219],  // Blue
+  ACCENT: [46, 204, 113],     // Green
+  TEXT_GRAY: [127, 140, 141], // Gray
+  LIGHT_GRAY: [189, 195, 199], // Light gray
+  
+  // Spacing
+  MARGIN: 20,
+  SECTION_SPACING: 12,
+  SUBSECTION_SPACING: 8,
+  LINE_SPACING: 6
+};
+
+// Helper function to set consistent text styling
+const setTextStyle = (doc, size, color, isBold = false) => {
+  doc.setFontSize(size);
+  doc.setTextColor(...color);
+  // Use helvetica font family for better compatibility
+  if (isBold) {
+    doc.setFont('helvetica', 'bold');
+  } else {
+    doc.setFont('helvetica', 'normal');
+  }
+  // Set text rendering mode for better quality
+  doc.setFontSize(size);
+};
+
+// Helper function to add section headers
+const addSectionHeader = (doc, text, yPos, margin = PDF_STYLES.MARGIN) => {
+  // Check if we need a new page for the header and content
+  const pageHeight = doc.internal.pageSize.height;
+  const remainingSpace = pageHeight - yPos - 50; // Reserve 50px for table content
+  
+  if (remainingSpace < 30) {
+    doc.addPage();
+    yPos = PDF_STYLES.MARGIN;
+  }
+  
+  setTextStyle(doc, PDF_STYLES.SECTION_HEADER, PDF_STYLES.PRIMARY, true);
+  doc.text(text, margin, yPos);
+  return yPos + PDF_STYLES.SUBSECTION_SPACING;
+};
+
+// Helper function to add subsection headers
+const addSubsectionHeader = (doc, text, yPos, margin = PDF_STYLES.MARGIN) => {
+  // Check if we need a new page for the header and content
+  const pageHeight = doc.internal.pageSize.height;
+  const remainingSpace = pageHeight - yPos - 40; // Reserve 40px for table content
+  
+  if (remainingSpace < 25) {
+    doc.addPage();
+    yPos = PDF_STYLES.MARGIN;
+  }
+  
+  setTextStyle(doc, PDF_STYLES.SUBSECTION_HEADER, PDF_STYLES.PRIMARY, true);
+  doc.text(text, margin, yPos);
+  return yPos + PDF_STYLES.LINE_SPACING;
+};
+
+// Helper function to add text with proper rendering
+const addText = (doc, text, x, y, options = {}) => {
+  const { fontSize = PDF_STYLES.BODY_TEXT, color = PDF_STYLES.PRIMARY, isBold = false } = options;
+  setTextStyle(doc, fontSize, color, isBold);
+  // Clean text to remove any problematic characters
+  const cleanText = text.toString().replace(/[^\x20-\x7E]/g, '');
+  doc.text(cleanText, x, y);
+};
+
+// Helper function to clean table data
+const cleanTableData = (data) => {
+  return data.map(row => 
+    row.map(cell => 
+      cell ? cell.toString().replace(/[^\x20-\x7E]/g, '') : ''
+    )
+  );
+};
+
+// Helper function to check if we need a new page for a table
+const checkPageBreak = (doc, yPos, estimatedTableHeight = 30) => {
+  const pageHeight = doc.internal.pageSize.height;
+  const remainingSpace = pageHeight - yPos - estimatedTableHeight - 20; // Reserve space for footer
+  
+  if (remainingSpace < 20) {
+    doc.addPage();
+    return PDF_STYLES.MARGIN;
+  }
+  return yPos;
+};
+
+export const generateMassBalanceReport = (formData, results) => {
+  const doc = new jsPDF();
+  let yPos = PDF_STYLES.MARGIN;
+  const margin = PDF_STYLES.MARGIN;
+  
+  // Add title
+  addText(doc, 'Mass Balance Report', margin, yPos, { 
+    fontSize: PDF_STYLES.TITLE, 
+    color: PDF_STYLES.PRIMARY, 
+    isBold: true 
+  });
+  yPos += PDF_STYLES.SECTION_SPACING;
+  
+  // Add timestamp
+  addText(doc, `Generated on ${new Date().toLocaleString()}`, margin, yPos, { 
+    fontSize: PDF_STYLES.BODY_TEXT, 
+    color: PDF_STYLES.TEXT_GRAY 
+  });
+  yPos += PDF_STYLES.SECTION_SPACING;
+  
+  // Add system information
+  yPos = addSectionHeader(doc, 'System Information', yPos);
+  
+  const systemInfo = [
+    ['Tank Volume', `${formData.tankVolume} m³`],
+    ['Number of Tanks', formData.numTanks],
+    ['Target Fish Weight', `${formData.targetFishWeight} g`],
+    ['Number of Fish', formData.targetNumFish],
+    ['Feed Rate', `${formData.feedRate}%`],
+    ['Feed Protein', `${formData.feedProtein}%`]
+  ];
+  
+  const tableConfig = {
+    head: [['Parameter', 'Value']],
+    theme: 'grid',
+    headStyles: { 
+      fillColor: PDF_STYLES.SECONDARY,
+      textColor: [255, 255, 255],
+      fontStyle: 'bold',
+      fontSize: PDF_STYLES.BODY_TEXT,
+      font: 'helvetica'
+    },
+    bodyStyles: {
+      fontSize: PDF_STYLES.BODY_TEXT,
+      textColor: PDF_STYLES.PRIMARY,
+      font: 'helvetica'
+    },
+    styles: { 
+      fontSize: PDF_STYLES.BODY_TEXT,
+      cellPadding: 4,
+      font: 'helvetica',
+      overflow: 'linebreak',
+      cellWidth: 'wrap'
+    },
+    margin: { left: margin },
+    tableLineColor: PDF_STYLES.LIGHT_GRAY,
+    tableLineWidth: 0.5,
+    showHead: 'everyPage',
+    startY: false,
+    pageBreak: 'avoid',
+    didDrawPage: function (data) {
+      // Add page number and footer to every page
+      const pageSize = doc.internal.pageSize;
+      const pageHeight = pageSize.height || pageSize.getHeight();
+      const pageWidth = pageSize.width || pageSize.getWidth();
+      
+      // Set font for footer
+      doc.setFontSize(8);
+      doc.setTextColor(128, 128, 128);
+      
+      // Add page number (right side)
+      doc.text('Page ' + doc.internal.getNumberOfPages(), pageWidth - 20, pageHeight - 10);
+      
+      // Add footer text (left side)
+      doc.text('Generated by Aqua BluePrint', 20, pageHeight - 10);
+    }
+  };
+  
+  // System Info Table
+  yPos = checkPageBreak(doc, yPos, 25);
+  autoTable(doc, {
+    ...tableConfig,
+    startY: yPos,
+    body: cleanTableData(systemInfo),
+  });
+  yPos = (doc.lastAutoTable?.finalY || yPos) + PDF_STYLES.SECTION_SPACING;
+  
+  // Water Quality Parameters
+  yPos = addSectionHeader(doc, 'Water Quality Parameters', yPos);
+  
+  const waterQuality = [
+    ['Water Temperature', `${formData.waterTemp}°C`],
+    ['pH Level', (formData.pH ?? formData.ph) ?? '-'],
+    ['Minimum DO', `${formData.minDO} mg/L`],
+    ['Maximum CO2', `${formData.maxCO2} mg/L`],
+    ['Maximum TAN', `${formData.maxTAN} mg/L`],
+    ['Minimum TSS', `${formData.minTSS} mg/L`]
+  ];
+  
+  yPos = checkPageBreak(doc, yPos, 25);
+  autoTable(doc, {
+    ...tableConfig,
+    startY: yPos,
+    body: cleanTableData(waterQuality),
+  });
+  yPos = (doc.lastAutoTable?.finalY || yPos) + PDF_STYLES.SECTION_SPACING;
+  
+  // Efficiency Parameters
+  yPos = addSectionHeader(doc, 'System Efficiency', yPos);
+  
+  const efficiency = [
+    ['O2 Absorption', `${formData.o2Absorption}%`],
+    ['CO2 Removal', `${formData.co2Removal}%`],
+    ['TAN Removal', `${formData.tanRemoval}%`],
+    ['TSS Removal', `${formData.tssRemoval}%`]
+  ];
+  
+  yPos = checkPageBreak(doc, yPos, 25);
+  autoTable(doc, {
+    ...tableConfig,
+    startY: yPos,
+    body: cleanTableData(efficiency),
+  });
+  yPos = (doc.lastAutoTable?.finalY || yPos) + PDF_STYLES.SECTION_SPACING;
+  
+  // Mass Balance Results
+  yPos = addSectionHeader(doc, 'Mass Balance Results', yPos);
+  
+  // Normalize result shapes (supports both MassBalanceReport and CreateDesignSystem structures)
+  const oxy = results?.oxygen || {};
+  const tss = results?.tss || {};
+  const co2 = results?.co2 || {};
+  const tan = results?.tan || {};
+
+  const o2Effluent = (oxy.effluentMgL ?? oxy.effluentConc ?? 0);
+  const o2ProdMg = (oxy.consMgPerDay ?? oxy.prodMgPerDay ?? 0);
+  const o2ProdKg = (oxy.consKgPerDay ?? oxy.prodKgPerDay ?? (o2ProdMg / 1_000_000));
+  const o2SatAdj = (oxy.saturationAdjustedMgL ?? 0);
+  const o2MinDoUse = (oxy.MINDO_use ?? null);
+
+  const tssEffluent = (tss.effluentMgL ?? tss.effluentConc ?? 0);
+  const tssProdMg = (tss.prodMgPerDay ?? 0);
+  const tssProdKg = (tss.prodKgPerDay ?? (tssProdMg / 1_000_000));
+  const tssMaxUse = (tss.MAXTSS_use ?? null);
+
+  const co2Effluent = (co2.effluentMgL ?? co2.effluentConc ?? 0);
+  const co2ProdMg = (co2.prodMgPerDay ?? 0);
+  const co2ProdKg = (co2.prodKgPerDay ?? (co2ProdMg / 1_000_000));
+  const co2MaxUse = (co2.MAXCO2_use ?? null);
+
+  const tanEffluent = (tan.effluentMgL ?? tan.effluentConc ?? 0);
+  const tanProdMg = (tan.prodMgPerDay ?? 0);
+  const tanProdKg = (tan.prodKgPerDay ?? (tanProdMg / 1_000_000));
+  const tanMaxUse = (tan.MAXTAN_use ?? null);
+
+  const formatNum = (n, digits = 2) =>
+    (typeof n === 'number' && isFinite(n)) ? n.toFixed(digits) : '-';
+
+  const massBalanceResults = [
+    ['Oxygen - O₂ Saturation Adjusted', `${formatNum(o2SatAdj)} mg/L`],
+    ['Oxygen - Min DO (use)', o2MinDoUse != null ? `${o2MinDoUse} mg/L` : '-'],
+    ['Oxygen - Effluent Conc.', `${formatNum(o2Effluent)} mg/L`],
+    ['Oxygen - Consumption (mg/day)', `${formatNum(o2ProdMg, 0)} mg/day`],
+    ['Oxygen - Consumption (kg/day)', `${formatNum(o2ProdKg)} kg/day`],
+    ['TSS - Max TSS (use)', tssMaxUse != null ? `${tssMaxUse} mg/L` : '-'],
+    ['TSS - Effluent Conc.', `${formatNum(tssEffluent)} mg/L`],
+    ['TSS - Production (mg/day)', `${formatNum(tssProdMg, 0)} mg/day`],
+    ['TSS - Production (kg/day)', `${formatNum(tssProdKg)} kg/day`],
+    ['CO2 - Max CO2 (use)', co2MaxUse != null ? `${co2MaxUse} mg/L` : '-'],
+    ['CO2 - Effluent Conc.', `${formatNum(co2Effluent)} mg/L`],
+    ['CO2 - Production (mg/day)', `${formatNum(co2ProdMg, 0)} mg/day`],
+    ['CO2 - Production (kg/day)', `${formatNum(co2ProdKg)} kg/day`],
+    ['TAN - Max TAN (use)', tanMaxUse != null ? `${tanMaxUse} mg/L` : '-'],
+    ['TAN - Effluent Conc.', `${formatNum(tanEffluent)} mg/L`],
+    ['TAN - Production (mg/day)', `${formatNum(tanProdMg, 0)} mg/day`],
+    ['TAN - Production (kg/day)', `${formatNum(tanProdKg)} kg/day`]
+  ];
+  
+  yPos = checkPageBreak(doc, yPos, 40);
+  autoTable(doc, {
+    ...tableConfig,
+    startY: yPos,
+    body: cleanTableData(massBalanceResults),
+  });
+  
+  // Footer is now added automatically to all pages via didDrawPage function
+  
+  return doc;
+};
+
+// Lightweight PDF: only the four card values as shown in the UI
+export const generateMassBalanceCardsPdf = (formData, results) => {
+  const doc = new jsPDF();
+  const margin = PDF_STYLES.MARGIN;
+  let yPos = PDF_STYLES.MARGIN;
+
+  // Add title
+  setTextStyle(doc, PDF_STYLES.TITLE, PDF_STYLES.PRIMARY, true);
+  doc.text('Mass Balance Report', margin, yPos);
+  yPos += PDF_STYLES.SECTION_SPACING;
+  
+  // Add timestamp
+  setTextStyle(doc, PDF_STYLES.BODY_TEXT, PDF_STYLES.TEXT_GRAY);
+  doc.text(`Generated on ${new Date().toLocaleString()}`, margin, yPos);
+  yPos += PDF_STYLES.SECTION_SPACING;
+
+  const oxy = results?.oxygen || {};
+  const tss = results?.tss || {};
+  const co2 = results?.co2 || {};
+  const tan = results?.tan || {};
+
+  const formatNum = (n, digits = 2) =>
+    (typeof n === 'number' && isFinite(n)) ? n.toFixed(digits) : '-';
+
+  const tables = [
+    {
+      title: 'Oxygen',
+      rows: [
+        ['O₂ Saturation Adjusted', `${formatNum(oxy.saturationAdjustedMgL)} mg/L`],
+        ['Min DO (use)', oxy.MINDO_use != null ? `${oxy.MINDO_use} mg/L` : '-'],
+        ['Effluent Conc.', `${formatNum(oxy.effluentMgL)} mg/L`],
+        ['Consumption (mg/day)', `${formatNum(oxy.consMgPerDay, 0)} mg/day`],
+        ['Consumption (kg/day)', `${formatNum(oxy.consKgPerDay)} kg/day`],
+      ]
+    },
+    {
+      title: 'Total Suspended Solids (TSS)',
+      rows: [
+        ['Effluent Conc.', `${formatNum(tss.effluentMgL)} mg/L`],
+        ['Max TSS (use)', tss.MAXTSS_use != null ? `${tss.MAXTSS_use} mg/L` : '-'],
+        ['Production (mg/day)', `${formatNum(tss.prodMgPerDay, 0)} mg/day`],
+        ['Production (kg/day)', `${formatNum(tss.prodKgPerDay)} kg/day`],
+      ]
+    },
+    {
+      title: 'Carbon Dioxide (CO2)',
+      rows: [
+        ['Effluent Conc.', `${formatNum(co2.effluentMgL)} mg/L`],
+        ['Max CO2 (use)', co2.MAXCO2_use != null ? `${co2.MAXCO2_use} mg/L` : '-'],
+        ['Production (mg/day)', `${formatNum(co2.prodMgPerDay, 0)} mg/day`],
+        ['Production (kg/day)', `${formatNum(co2.prodKgPerDay)} kg/day`],
+      ]
+    },
+    {
+      title: 'Total Ammonia Nitrogen (TAN)',
+      rows: [
+        ['Effluent Conc.', `${formatNum(tan.effluentMgL)} mg/L`],
+        ['Max TAN (use)', tan.MAXTAN_use != null ? `${tan.MAXTAN_use} mg/L` : '-'],
+        ['Production (mg/day)', `${formatNum(tan.prodMgPerDay, 0)} mg/day`],
+        ['Production (kg/day)', `${formatNum(tan.prodKgPerDay)} kg/day`],
+      ]
+    },
+  ];
+
+  const tableConfig = {
+    head: [['Parameter', 'Value']],
+    theme: 'grid',
+    headStyles: { 
+      fillColor: PDF_STYLES.SECONDARY,
+      textColor: [255, 255, 255],
+      fontStyle: 'bold',
+      fontSize: PDF_STYLES.BODY_TEXT,
+      font: 'helvetica'
+    },
+    bodyStyles: {
+      fontSize: PDF_STYLES.BODY_TEXT,
+      textColor: PDF_STYLES.PRIMARY,
+      font: 'helvetica'
+    },
+    styles: { 
+      fontSize: PDF_STYLES.BODY_TEXT,
+      cellPadding: 4,
+      font: 'helvetica',
+      overflow: 'linebreak',
+      cellWidth: 'wrap'
+    },
+    margin: { left: margin },
+    tableLineColor: PDF_STYLES.LIGHT_GRAY,
+    tableLineWidth: 0.5,
+    showHead: 'everyPage',
+    startY: false,
+    pageBreak: 'auto',
+    didDrawPage: function (data) {
+      // Add page number and footer to every page
+      const pageSize = doc.internal.pageSize;
+      const pageHeight = pageSize.height || pageSize.getHeight();
+      const pageWidth = pageSize.width || pageSize.getWidth();
+      
+      // Set font for footer
+      doc.setFontSize(8);
+      doc.setTextColor(128, 128, 128);
+      
+      // Add page number (right side)
+      doc.text('Page ' + doc.internal.getNumberOfPages(), pageWidth - 20, pageHeight - 10);
+      
+      // Add footer text (left side)
+      doc.text('Generated by Aqua BluePrint', 20, pageHeight - 10);
+    }
+  };
+
+  tables.forEach((section, idx) => {
+    yPos += (idx === 0 ? PDF_STYLES.LINE_SPACING : PDF_STYLES.SECTION_SPACING);
+    yPos = addSubsectionHeader(doc, section.title, yPos);
+    yPos = checkPageBreak(doc, yPos, 20);
+    autoTable(doc, {
+      ...tableConfig,
+      startY: yPos,
+      body: cleanTableData(section.rows),
+    });
+    yPos = (doc.lastAutoTable?.finalY || yPos) + PDF_STYLES.LINE_SPACING;
+  });
+
+  // Footer is now added automatically to all pages via didDrawPage function
+
+  return doc;
+};
+
+// Advanced Report PDF Generator
+export const generateAdvancedReportPdf = (formData, advancedReport, limitingFactor) => {
+  const doc = new jsPDF();
+  let yPos = PDF_STYLES.MARGIN;
+  const margin = PDF_STYLES.MARGIN;
+  
+  // Add title
+  setTextStyle(doc, PDF_STYLES.TITLE, PDF_STYLES.PRIMARY, true);
+  doc.text('Advanced Design System Report', margin, yPos);
+  yPos += PDF_STYLES.SECTION_SPACING;
+  
+  // Add timestamp
+  setTextStyle(doc, PDF_STYLES.BODY_TEXT, PDF_STYLES.TEXT_GRAY);
+  doc.text(`Generated on ${new Date().toLocaleString()}`, margin, yPos);
+  yPos += PDF_STYLES.SECTION_SPACING;
+  
+  const tableConfig = {
+    head: [['Parameter', 'Value']],
+    theme: 'grid',
+    headStyles: { 
+      fillColor: PDF_STYLES.SECONDARY,
+      textColor: [255, 255, 255],
+      fontStyle: 'bold',
+      fontSize: PDF_STYLES.BODY_TEXT,
+      font: 'helvetica'
+    },
+    bodyStyles: {
+      fontSize: PDF_STYLES.BODY_TEXT,
+      textColor: PDF_STYLES.PRIMARY,
+      font: 'helvetica'
+    },
+    styles: { 
+      fontSize: PDF_STYLES.BODY_TEXT,
+      cellPadding: 4,
+      font: 'helvetica',
+      overflow: 'linebreak',
+      cellWidth: 'wrap'
+    },
+    margin: { left: margin },
+    tableLineColor: PDF_STYLES.LIGHT_GRAY,
+    tableLineWidth: 0.5,
+    showHead: 'everyPage',
+    startY: false,
+    pageBreak: 'auto',
+    didDrawPage: function (data) {
+      // Add page number and footer to every page
+      const pageSize = doc.internal.pageSize;
+      const pageHeight = pageSize.height || pageSize.getHeight();
+      const pageWidth = pageSize.width || pageSize.getWidth();
+      
+      // Set font for footer
+      doc.setFontSize(8);
+      doc.setTextColor(128, 128, 128);
+      
+      // Add page number (right side)
+      doc.text('Page ' + doc.internal.getNumberOfPages(), pageWidth - 20, pageHeight - 10);
+      
+      // Add footer text (left side)
+      doc.text('Generated by Aqua BluePrint', 20, pageHeight - 10);
+    }
+  };
+  
+  // Advanced Report Results
+  if (advancedReport && advancedReport.step_6) {
+    yPos = addSectionHeader(doc, 'Advanced Calculation Results', yPos);
+    
+    const s1 = advancedReport.step_6;
+    const formatNum = (n, digits = 2) => 
+      (typeof n === 'number' && isFinite(n)) ? n.toFixed(digits) : '-';
+    
+    // Stage 1 Results
+    yPos = addSubsectionHeader(doc, 'Stage 1 Results', yPos);
+    
+    const stage1Results = [
+      ['Oxygen - L/min', formatNum(s1.oxygen?.l_per_min)],
+      ['Oxygen - m3/hr', formatNum(s1.oxygen?.m3_per_hr)],
+      ['CO2 - L/min', formatNum(s1.co2?.l_per_min)],
+      ['CO2 - m3/hr', formatNum(s1.co2?.m3_per_hr)],
+      ['TSS - L/min', formatNum(s1.tss?.l_per_min)],
+      ['TSS - m3/hr', formatNum(s1.tss?.m3_per_hr)],
+      ['TAN - L/min', formatNum(s1.tan?.l_per_min)],
+      ['TAN - m3/hr', formatNum(s1.tan?.m3_per_hr)]
+    ];
+    
+    yPos = checkPageBreak(doc, yPos, 30);
+    autoTable(doc, {
+      ...tableConfig,
+      startY: yPos,
+      body: cleanTableData(stage1Results),
+    });
+    yPos = (doc.lastAutoTable?.finalY || yPos) + PDF_STYLES.SUBSECTION_SPACING;
+    
+    // Stage 2 Results
+    if (s1.stage2_oxygen || s1.stage2_co2 || s1.stage2_tss || s1.stage2_tan) {
+      yPos = addSubsectionHeader(doc, 'Stage 2 Results', yPos);
+      
+      const stage2Results = [
+        ['Oxygen - L/min', formatNum(s1.stage2_oxygen?.l_per_min)],
+        ['Oxygen - m3/hr', formatNum(s1.stage2_oxygen?.m3_per_hr)],
+        ['CO2 - L/min', formatNum(s1.stage2_co2?.l_per_min)],
+        ['CO2 - m3/hr', formatNum(s1.stage2_co2?.m3_per_hr)],
+        ['TSS - L/min', formatNum(s1.stage2_tss?.l_per_min)],
+        ['TSS - m3/hr', formatNum(s1.stage2_tss?.m3_per_hr)],
+        ['TAN - L/min', formatNum(s1.stage2_tan?.l_per_min)],
+        ['TAN - m3/hr', formatNum(s1.stage2_tan?.m3_per_hr)]
+      ];
+      
+      yPos = checkPageBreak(doc, yPos, 30);
+      autoTable(doc, {
+        ...tableConfig,
+        startY: yPos,
+        body: cleanTableData(stage2Results),
+      });
+      yPos = (doc.lastAutoTable?.finalY || yPos) + PDF_STYLES.SUBSECTION_SPACING;
+    }
+    
+    // Stage 3 Results
+    if (s1.stage3_oxygen || s1.stage3_co2 || s1.stage3_tss || s1.stage3_tan) {
+      yPos = addSubsectionHeader(doc, 'Stage 3 Results', yPos);
+      
+      const stage3Results = [
+        ['Oxygen - L/min', formatNum(s1.stage3_oxygen?.l_per_min)],
+        ['Oxygen - m3/hr', formatNum(s1.stage3_oxygen?.m3_per_hr)],
+        ['CO2 - L/min', formatNum(s1.stage3_co2?.l_per_min)],
+        ['CO2 - m3/hr', formatNum(s1.stage3_co2?.m3_per_hr)],
+        ['TSS - L/min', formatNum(s1.stage3_tss?.l_per_min)],
+        ['TSS - m3/hr', formatNum(s1.stage3_tss?.m3_per_hr)],
+        ['TAN - L/min', formatNum(s1.stage3_tan?.l_per_min)],
+        ['TAN - m3/hr', formatNum(s1.stage3_tan?.m3_per_hr)]
+      ];
+      
+      yPos = checkPageBreak(doc, yPos, 30);
+      autoTable(doc, {
+        ...tableConfig,
+        startY: yPos,
+        body: cleanTableData(stage3Results),
+      });
+      yPos = (doc.lastAutoTable?.finalY || yPos) + PDF_STYLES.SUBSECTION_SPACING;
+    }
+  }
+  
+  // Limiting Factor
+  if (limitingFactor) {
+    yPos = addSectionHeader(doc, 'Limiting Factor Analysis', yPos);
+    
+    const formatNum = (n, digits = 2) => 
+      (typeof n === 'number' && isFinite(n)) ? n.toFixed(digits) : '-';
+    
+    // Stage 1 Limiting Factor
+    if (limitingFactor.stage1) {
+      yPos = addSubsectionHeader(doc, 'Stage 1', yPos);
+      
+      const stage1Data = [
+        ['Factor', limitingFactor.stage1.factor || '-'],
+        ['Flow (L/min)', formatNum(limitingFactor.stage1.flow_l_per_min)],
+        ['Flow (m3/hr)', formatNum(limitingFactor.stage1.flow_m3_per_hr)]
+      ];
+      
+      yPos = checkPageBreak(doc, yPos, 20);
+      autoTable(doc, {
+        ...tableConfig,
+        startY: yPos,
+        body: cleanTableData(stage1Data),
+      });
+      yPos = (doc.lastAutoTable?.finalY || yPos) + PDF_STYLES.SUBSECTION_SPACING;
+    }
+    
+    // Stage 2 Limiting Factor
+    if (limitingFactor.stage2) {
+      yPos = addSubsectionHeader(doc, 'Stage 2', yPos);
+      
+      const stage2Data = [
+        ['Factor', limitingFactor.stage2.factor || '-'],
+        ['Flow (L/min)', formatNum(limitingFactor.stage2.flow_l_per_min)],
+        ['Flow (m3/hr)', formatNum(limitingFactor.stage2.flow_m3_per_hr)]
+      ];
+      
+      yPos = checkPageBreak(doc, yPos, 20);
+      autoTable(doc, {
+        ...tableConfig,
+        startY: yPos,
+        body: cleanTableData(stage2Data),
+      });
+      yPos = (doc.lastAutoTable?.finalY || yPos) + PDF_STYLES.SUBSECTION_SPACING;
+    }
+    
+    // Stage 3 Limiting Factor
+    if (limitingFactor.stage3) {
+      yPos = addSubsectionHeader(doc, 'Stage 3', yPos);
+      
+      const stage3Data = [
+        ['Factor', limitingFactor.stage3.factor || '-'],
+        ['Flow (L/min)', formatNum(limitingFactor.stage3.flow_l_per_min)],
+        ['Flow (m3/hr)', formatNum(limitingFactor.stage3.flow_m3_per_hr)]
+      ];
+      
+      yPos = checkPageBreak(doc, yPos, 20);
+      autoTable(doc, {
+        ...tableConfig,
+        startY: yPos,
+        body: cleanTableData(stage3Data),
+      });
+      yPos = (doc.lastAutoTable?.finalY || yPos) + PDF_STYLES.SUBSECTION_SPACING;
+    }
+  }
+  
+  // Footer is now added automatically to all pages via didDrawPage function
+  
+  return doc;
+};

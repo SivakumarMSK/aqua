@@ -1,0 +1,118 @@
+/* General Reset */
+body, html {
+  margin: 0;
+  padding: 0;
+  font-family: 'Montserrat', sans-serif;
+}
+
+/* Full-Screen Centering */
+.welcome-container {
+  background-color: #FFFFFF;
+  height: 100vh;
+  width: 100vw;
+  display: flex;
+  justify-content: center;  /* Horizontal center */
+  align-items: center;      /* Vertical center */
+  margin: 0;
+  padding: 0;
+  position: fixed;
+  top: 0;
+  left: 0;
+  box-sizing: border-box;
+}
+
+/* Card stays in the center */
+.welcome-card {
+  background-color: #F7FFFE;
+  border-radius: 20px;
+  padding: 40px;
+  transition: transform 0.2s ease-in-out;
+  width: 700px;
+  max-width: 90vw;
+  text-align: center;  /* Ensure text/buttons align nicely */
+}
+
+
+.welcome-card:hover {
+  transform: scale(1.02);
+}
+
+/* Headline */
+.welcome-heading {
+  color: #000E1F;
+  font-size: 2.5rem;
+  font-weight: 600;
+  margin-bottom: 20px;
+}
+
+/* Description Text */
+.welcome-description {
+  color: #000E1F;
+  font-size: 1.125rem;
+  margin-bottom: 30px;
+}
+
+/* Buttons */
+.welcome-btn {
+  padding: 10px 30px;
+  font-size: 1rem;
+  font-weight: 500;
+  border-radius: 30px;
+  transition: transform 0.2s ease, background-color 0.2s ease;
+}
+
+.welcome-btn:hover {
+  transform: scale(1.02);  /* Smooth hover animation */
+}
+
+/* Primary Button */
+.welcome-btn.btn-primary1 {
+  background-color: #0059FF;
+  border: 2px solid #0059FF;
+  color: #FFFFFF;
+}
+
+.welcome-btn.btn-primary1:hover {
+  background-color: #0043CC;
+}
+
+/* Secondary Button */
+.welcome-btn.btn-secondary1 {
+  background-color: #00FFC8;
+  border: 2px solid #00FFC8;
+  color: #000E1F;
+}
+
+.welcome-btn.btn-secondary1:hover {
+  background-color: #00FFFF;
+  color: #FFFFFF;
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+  .welcome-heading {
+    font-size: 2rem;
+  }
+  .welcome-description {
+    font-size: 1rem;
+  }
+  .welcome-btn {
+    font-size: 0.875rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .welcome-card {
+    padding: 30px;
+  }
+  .welcome-heading {
+    font-size: 1.75rem;
+  }
+  .welcome-description {
+    font-size: 0.95rem;
+  }
+  .welcome-btn {
+    font-size: 0.875rem;
+    width: 100%;
+  }
+}

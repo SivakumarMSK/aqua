@@ -1,0 +1,64 @@
+/* src/index.css */
+
+/* Montserrat (load via @import) */
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&display=swap');
+
+:root{
+  --bg: #FFFFFF;
+  --primary: #0059FF;
+  --secondary: #00FFC8;
+  --text: #000E1F;
+  --hover: #00FFFF;
+  --transition-duration: 150ms;
+  --border-radius: 8px; /* minimal rounded corners */
+}
+
+/* Reset body */
+html,body,#root{
+  height:100%;
+}
+body{
+  margin:0;
+  font-family: "Montserrat", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+  background: var(--bg);
+  color: var(--text);
+  -webkit-font-smoothing:antialiased;
+  -moz-osx-font-smoothing:grayscale;
+}
+
+/* Focus ring accessible */
+:focus{
+  outline: 3px solid rgba(0,89,255,0.12);
+  outline-offset: 2px;
+}
+
+/* Container width breakpoints matching your spec */
+.app-container{
+  margin-left:auto;
+  margin-right:auto;
+  padding-left: 30px;
+  padding-right: 30px;
+  max-width: 960px; /* default 1080p */
+}
+
+/* Larger viewports */
+@media (min-width:1200px){ .app-container{ max-width:1280px; } } /* 2K */
+@media (min-width:1400px){ .app-container{ max-width:1440px; } } /* 4K */
+@media (max-width:991.98px){ .app-container{ max-width:720px; } } /* Tablet */
+@media (max-width:575.98px){ .app-container{ max-width: calc(100% - 60px); padding-left:30px; padding-right:30px; } } /* Mobile */
+
+/* Minimal utility */
+.btn-ghost {
+  background: transparent;
+  border: none;
+  padding: 6px 10px;
+}
+
+/* Remove Bootstrap shadows globally if present in components */
+.card, .navbar { box-shadow:none !important; }
+
+/* Hide Edge (legacy/Chromium) built-in password reveal & clear icons */
+input[type="password"]::-ms-reveal,
+input[type="password"]::-ms-clear {
+  display: none;
+}

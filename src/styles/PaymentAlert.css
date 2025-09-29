@@ -1,0 +1,234 @@
+.payment-alert-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: fadeIn 0.2s ease-out;
+}
+
+.payment-alert {
+  background: white;
+  border-radius: 8px;
+  width: 90%;
+  max-width: 360px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  animation: slideUp 0.3s ease-out;
+}
+
+.payment-alert-header {
+  padding: 16px;
+  border-bottom: 1px solid #eee;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.payment-alert-header h3 {
+  margin: 0;
+  font-size: 18px;
+  color: #2c3e50;
+  font-weight: 500;
+}
+
+.alert-close {
+  background: none;
+  border: none;
+  font-size: 20px;
+  color: #95a5a6;
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
+}
+
+.payment-success-content {
+  padding: 20px 16px;
+  text-align: center;
+}
+
+.checkmark-circle {
+  width: 80px;
+  height: 80px;
+  position: relative;
+  margin: 0 auto 20px;
+  background: #4CAF50;
+  border-radius: 50%;
+  box-shadow: 0 3px 8px rgba(76, 175, 80, 0.3);
+  animation: scaleIn 0.3s ease-in-out forwards;
+  transform: scale(0);
+}
+
+.checkmark {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  transform: scale(0);
+  opacity: 0;
+  animation: checkAnim 0.5s cubic-bezier(0.71, -0.46, 0.88, 0.6) 0.3s forwards;
+}
+
+.checkmark:before {
+  content: "";
+  position: absolute;
+  width: 28px;
+  height: 56px;
+  background: none;
+  border: 8px solid #fff;
+  border-top: 0;
+  border-left: 0;
+  transform-origin: 100% 100%;
+  transform: rotate(45deg);
+  position: absolute;
+  top: 8px;
+  left: 28px;
+}
+
+.success-details {
+  margin-top: 16px;
+}
+
+.plan-name {
+  font-size: 18px;
+  font-weight: 600;
+  color: #2c3e50;
+  margin: 0 0 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #eee;
+}
+
+.details-grid {
+  display: grid;
+  gap: 12px;
+  font-size: 14px;
+  background: #f8f9fa;
+  padding: 16px;
+  border-radius: 8px;
+}
+
+.detail-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  color: #34495e;
+  padding: 4px 0;
+}
+
+.detail-item span:first-child {
+  color: #7f8c8d;
+  font-weight: 500;
+}
+
+.detail-item span:last-child {
+  font-weight: 600;
+  color: #2c3e50;
+  background: white;
+  padding: 4px 12px;
+  border-radius: 4px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.payment-alert-content {
+  padding: 16px;
+  text-align: center;
+}
+
+.error-icon {
+  font-size: 24px;
+  margin-bottom: 8px;
+}
+
+.error-message {
+  margin: 0;
+  color: #e74c3c;
+  font-size: 14px;
+}
+
+.payment-alert-actions {
+  padding: 16px;
+  border-top: 1px solid #eee;
+  display: flex;
+  justify-content: center;
+}
+
+.alert-button {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 4px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  background: #95a5a6;
+  color: white;
+}
+
+.alert-button.confirm {
+  background: #3498db;
+}
+
+.alert-button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    transform: scale(0);
+  }
+  to {
+    transform: scale(1);
+  }
+}
+
+@keyframes checkAnim {
+  0% {
+    opacity: 1;
+    transform: scale(0);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.2);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.success-details {
+  opacity: 0;
+  transform: translateY(10px);
+  animation: slideUpFade 0.5s ease-out 0.8s forwards;
+}
+
+@keyframes slideUpFade {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

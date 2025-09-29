@@ -1,0 +1,443 @@
+import React, { useEffect, useState } from 'react';
+import { Card, Container, Row, Col, Button, Badge } from 'react-bootstrap';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { getAllDesignSystems } from '../services/designSystemService.jsx';
+import Toast from './Toast';
+import './AllProjects.css';
+
+const AllProjects = () => {
+  const [projects, setProjects] = useState([]);
+  const [basicProjects, setBasicProjects] = useState([]);
+  const [advancedProjects, setAdvancedProjects] = useState([]);
+  const [filteredProjects, setFilteredProjects] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
+  const [filterType, setFilterType] = useState('basic'); // 'basic', 'advanced'
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const projectType = searchParams.get('type'); // 'basic', 'advanced', or null for all
+
+  // Project classification function - use type field from API
+  const classifyProject = (project) => {
+    // Use the type field from the API response
+    return project.type === 'advanced' ? 'advanced' : 'basic';
+  };
+
+  useEffect(() => {
+    let mounted = true;
+
+    const processDesigns = (designs) => {
+      if (!mounted) return;
+
+      // Remove duplicates based on design_id and name/project combination
+      const uniqueDesigns = designs.reduce((acc, current) => {
+        const exists = acc.find(item => 
+          item.design_id === current.design_id || 
+          (item.design_system_name === current.design_system_name && 
+           item.project_name === current.project_name)
+        );
+        if (!exists) {
+          return [...acc, current];
+        }
+        return acc;
+      }, []).sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+      
+      // Extract unique projects and classify them
+      const uniqueProjects = uniqueDesigns
+        .filter(design => design.projects && design.projects.length > 0)
+        .reduce((acc, design) => {
+          const project = design.projects[0];
+          const exists = acc.find(p => 
+            p.id === project.id || 
+            (p.name === project.name && p.species_names === project.species_names)
+          );
+          if (!exists) {
+            return [...acc, { 
+              ...project, 
+              design_system_name: design.design_system_name,
+              design_system: design // Store reference to design for classification
+            }];
+          }
+          return acc;
+        }, []);
+
+      // Classify projects into basic and advanced
+      const basicProjectsList = [];
+      const advancedProjectsList = [];
+
+      uniqueProjects.forEach(project => {
+        const projectType = classifyProject(project);
+        if (projectType === 'basic') {
+          basicProjectsList.push(project);
+        } else {
+          advancedProjectsList.push(project);
+        }
+      });
+
+      setProjects(uniqueProjects);
+      setBasicProjects(basicProjectsList);
+      setAdvancedProjects(advancedProjectsList);
+      setLoading(false);
+    };
+
+    const loadDesigns = async () => {
+      try {
+        setLoading(true);
+        const designs = await getAllDesignSystems();
+        
+        if (!mounted) return;
+
+        processDesigns(designs);
+      } catch (err) {
+        if (!mounted) return;
+        
+        console.error('Error fetching designs:', err);
+        setToast({
+          show: true,
+          message: err.message,
+          type: 'error'
+        });
+        setLoading(false);
+      }
+    };
+
+    loadDesigns();
+    
+    return () => {
+      mounted = false;
+    };
+  }, [navigate]);
+
+  // Filter projects based on filter type
+  useEffect(() => {
+    if (filterType === 'basic') {
+      setFilteredProjects(basicProjects);
+    } else if (filterType === 'advanced') {
+      setFilteredProjects(advancedProjects);
+    }
+  }, [filterType, basicProjects, advancedProjects]);
+
+  // Initialize filter type based on URL parameter
+  useEffect(() => {
+    if (projectType === 'basic') {
+      setFilterType('basic');
+    } else if (projectType === 'advanced') {
+      setFilterType('advanced');
+    } else {
+      setFilterType('basic'); // Default to basic when no URL parameter
+    }
+  }, [projectType]);
+
+  const handleProjectClick = async (project) => {
+    // Determine project type
+    const projectType = classifyProject(project);
+    
+    if (projectType === 'basic') {
+      await handleBasicProjectClick(project);
+    } else {
+      await handleAdvancedProjectClick(project);
+    }
+  };
+
+  // Handle basic project click - use production calculations API
+  const handleBasicProjectClick = async (project) => {
+    try {
+      setLoading(true);
+      
+      const token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
+      const response = await fetch(`http://13.53.148.164:5000/formulas/api/projects/${project.id}/production-calculations`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Accept': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch basic calculations: ${response.status}`);
+      }
+
+      const calcData = await response.json();
+      console.log('Basic calculation API response:', calcData);
+
+      // Map API response to our expected format
+      const outputs = {
+        oxygen: {
+          bestInletMgL: calcData.o2_saturation_adjusted?.value || calcData.o2_saturation_adjusted_mg_l || 0,
+          minSatPct: calcData.o2_saturation_adjusted?.value || calcData.o2_saturation_adjusted_mg_l || 0,
+          saturationAdjustedMgL: calcData.o2_saturation_adjusted_mg_l || 0,
+          MINDO_use: calcData.min_do_mg_l ?? calcData.min_do_use_mg_l ?? null,
+          effluentMgL: calcData.oxygen_effluent_concentration?.value || calcData.oxygen_effluent_concentration_mg_l || 0,
+          consMgPerDay: calcData.oxygen_consumption_production?.value || calcData.oxygen_consumption_production_mg_per_day || 0,
+          consKgPerDay: (calcData.oxygen_consumption_production?.value || calcData.oxygen_consumption_production_mg_per_day || 0) / 1000000
+        },
+        tss: {
+          effluentMgL: calcData.tss_effluent_concentration?.value || calcData.tss_effluent_concentration_mg_l || 0,
+          prodMgPerDay: calcData.tss_production?.value || calcData.tss_production_mg || 0,
+          prodKgPerDay: (calcData.tss_production?.value || calcData.tss_production_mg || 0) / 1000000,
+          MAXTSS_use: calcData.max_tss_use_mg_l ?? null
+        },
+        co2: {
+          effluentMgL: calcData.co2_effluent_concentration_mg_l ?? 15.5,
+          prodMgPerDay: calcData.co2_production_mg_per_day ?? 2500000,
+          prodKgPerDay: (calcData.co2_production_mg_per_day ?? 2500000) / 1000000,
+          MAXCO2_use: calcData.max_co2_use_mg_l ?? null
+        },
+        tan: {
+          effluentMgL: calcData.tan_effluent_concentration_mg_l ?? 1.0,
+          prodMgPerDay: calcData.tan_production_mg_per_day ?? 800000,
+          prodKgPerDay: (calcData.tan_production_mg_per_day ?? 800000) / 1000000,
+          MAXTAN_use: calcData.max_tan_use_mg_l ?? null
+        }
+      };
+
+      // Create dummy inputs for the report
+      const inputs = {
+        waterTemp: 25,
+        salinity: 0,
+        siteElevation: 0,
+        minDO: 6,
+        pH: 7,
+        maxCO2: 10,
+        maxTAN: 1,
+        minTSS: 20,
+        tankVolume: 100,
+        numTanks: 1,
+        targetFishWeight: 500,
+        targetNumFish: 1000,
+        feedRate: 2,
+        feedProtein: 40,
+        o2Absorption: 80,
+        co2Removal: 70,
+        tssRemoval: 80,
+        tanRemoval: 60,
+        targetSpecies: 'Tilapia'
+      };
+      
+      // Navigate to ProjectReport with the calculated results
+      navigate('/project-reports/' + project.id, {
+        state: {
+          inputs: inputs,
+          outputs: outputs,
+          projectType: 'basic'
+        }
+      });
+    } catch (err) {
+      console.error('Error loading basic project:', err);
+      setToast({
+        show: true,
+        message: 'Failed to load basic project calculations: ' + err.message,
+        type: 'error'
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Handle advanced project click - use step6results and limiting factor APIs
+  const handleAdvancedProjectClick = async (project) => {
+    try {
+      setLoading(true);
+      
+      const token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
+      
+      // Call both advanced APIs
+      const [step6Response, limitingFactorResponse] = await Promise.all([
+        fetch(`http://13.53.148.164:5000/advanced/formulas/api/projects/${project.id}/step_6_results`, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Accept': 'application/json'
+          }
+        }),
+        fetch(`http://13.53.148.164:5000/advanced/formulas/api/projects/${project.id}/limiting_factor`, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Accept': 'application/json'
+          }
+        })
+      ]);
+
+      if (!step6Response.ok) {
+        throw new Error(`Failed to fetch step6 results: ${step6Response.status}`);
+      }
+      if (!limitingFactorResponse.ok) {
+        throw new Error(`Failed to fetch limiting factor: ${limitingFactorResponse.status}`);
+      }
+
+      const step6Data = await step6Response.json();
+      const limitingFactorData = await limitingFactorResponse.json();
+      
+      console.log('Advanced step6 API response:', step6Data);
+      console.log('Advanced limiting factor API response:', limitingFactorData);
+
+      // Map API response to our expected format
+      const outputs = {
+        step6Results: step6Data,
+        limitingFactor: limitingFactorData,
+        // Add any other advanced-specific data mapping here
+      };
+
+      // Create dummy inputs for the report
+      const inputs = {
+        waterTemp: 25,
+        salinity: 0,
+        siteElevation: 0,
+        minDO: 6,
+        pH: 7,
+        maxCO2: 10,
+        maxTAN: 1,
+        minTSS: 20,
+        tankVolume: 100,
+        numTanks: 1,
+        targetFishWeight: 500,
+        targetNumFish: 1000,
+        feedRate: 2,
+        feedProtein: 40,
+        o2Absorption: 80,
+        co2Removal: 70,
+        tssRemoval: 80,
+        tanRemoval: 60,
+        targetSpecies: 'Tilapia'
+      };
+      
+      // Navigate to ProjectReport with the calculated results
+      navigate('/project-reports/' + project.id, {
+        state: {
+          inputs: inputs,
+          outputs: outputs,
+          projectType: 'advanced'
+        }
+      });
+    } catch (err) {
+      console.error('Error loading advanced project:', err);
+      setToast({
+        show: true,
+        message: 'Failed to load advanced project calculations: ' + err.message,
+        type: 'error'
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="loading-container">
+        <div className="spinner-border text-primary" role="status">
+          <span className="visually-hidden">Loading...</span>
+        </div>
+      </div>
+    );
+  }
+
+
+  return (
+    <div className="all-projects-container">
+      <Container>
+        <div className="header-section">
+          <div className="back-button-container">
+            <button 
+              className="btn btn-outline-primary rounded-circle back-button"
+              onClick={() => navigate('/dashboard')}
+            >
+              <i className="bi bi-arrow-left"></i>
+            </button>
+          </div>
+          <h1>
+            {filterType === 'basic' ? 'Basic Projects' : 'Advanced Projects'}
+          </h1>
+          <p className="text-muted">
+            {filterType === 'basic' ? 'Browse and manage your basic projects' : 'Browse and manage your advanced projects'}
+          </p>
+        </div>
+        
+        {/* Project Type Filter Buttons - Only show when not coming from specific project type pages */}
+        {!projectType && (
+          <div className="project-type-buttons d-flex gap-2 mb-3">
+            <button
+              onClick={() => setFilterType('basic')}
+              className={`project-filter-btn ${filterType === 'basic' ? 'active' : 'inactive'}`}
+            >
+              Basic Projects
+            </button>
+            <button
+              onClick={() => setFilterType('advanced')}
+              className={`project-filter-btn ${filterType === 'advanced' ? 'active' : 'inactive'}`}
+            >
+              Advanced Projects
+            </button>
+          </div>
+        )}
+        
+        <div className="projects-grid">
+          {filteredProjects.length === 0 ? (
+            <div className="text-center py-5">
+              <i className={`bi ${filterType === 'basic' ? 'bi-gear' : 'bi-cpu'} text-muted mb-3`} style={{fontSize: '3rem'}}></i>
+              <h4>
+                {filterType === 'basic' ? 'No Basic Projects Found' : 'No Advanced Projects Found'}
+              </h4>
+              <p className="text-muted">
+                {filterType === 'basic' ? 'No basic projects found.' : 'No advanced projects found.'}
+              </p>
+            </div>
+          ) : (
+            filteredProjects.map((project) => {
+              const projectType = classifyProject(project, project.design_system);
+              return (
+                <Card 
+                  key={project.id}
+                  className={`project-card ${projectType === 'basic' ? 'basic-project-card' : 'advanced-project-card'}`}
+                >
+                  <Card.Body>
+                    <div className="d-flex justify-content-between align-items-start">
+                      <div>
+                        <h5 className="mb-2">{project.name}</h5>
+                        <div className="project-details">
+                          <div className="kv-row">
+                            <span className="kv-key text-muted">Species</span>
+                            <span className="kv-value species-names">{project.species_names || 'N/A'}</span>
+                          </div>
+                          <div className="kv-row">
+                            <span className="kv-key text-muted">Type</span>
+                            <span className="kv-value">
+                              <span className={`badge ${projectType === 'basic' ? 'bg-primary' : 'bg-success'}`}>
+                                {projectType === 'basic' ? 'Basic' : 'Advanced'}
+                              </span>
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="card-cta-br">
+                      <span 
+                        className="eye-btn" 
+                        title={`View ${projectType} project details`} 
+                        aria-label={`View ${projectType} project details`} 
+                        onClick={() => handleProjectClick(project)}
+                      >
+                        <i className="bi bi-eye"></i>
+                      </span>
+                    </div>
+                  </Card.Body>
+                </Card>
+              );
+            })
+          )}
+        </div>
+      </Container>
+      {/* Temporarily disable Toast to test corner alert issue */}
+      {toast.show && (
+        <Toast 
+          show={toast.show} 
+          message={toast.message} 
+          type={toast.type}
+          onClose={() => setToast({ show: false, message: '', type: 'success' })}
+        />
+      )}
+    </div>
+  );
+};
+
+export default AllProjects;

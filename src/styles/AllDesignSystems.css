@@ -1,0 +1,86 @@
+.all-design-systems-container {
+  background-color: #F9FAFB;
+  min-height: 100vh;
+  padding-top: 60px;
+}
+
+.all-design-systems-content {
+  padding: 30px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 25px;
+}
+
+.controls-row {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.search-bar {
+  flex-grow: 1;
+  margin-right: 20px;
+}
+
+.filter-sort-group {
+  display: flex;
+  gap: 10px;
+}
+
+.design-systems-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 20px;
+}
+
+.system-card {
+  border: 1px solid #E5E7EB;
+  border-radius: 12px;
+  transition: all 0.2s ease;
+}
+
+.system-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.08);
+}
+
+.card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.status-badge {
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 0.8em;
+  font-weight: 600;
+}
+
+.status-badge.active {
+  background-color: #D1FAE5;
+  color: #065F46;
+}
+
+.status-badge.draft {
+  background-color: #FEF3C7;
+  color: #92400E;
+}
+
+.status-badge.archived {
+  background-color: #E5E7EB;
+  color: #4B5563;
+}
+
+.card-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 15px;
+}

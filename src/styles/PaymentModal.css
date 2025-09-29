@@ -1,0 +1,205 @@
+.payment-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.payment-modal {
+  background: white;
+  padding: 24px;
+  border-radius: 10px;
+  max-width: 420px;
+  width: 90%;
+  position: relative;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+}
+
+.payment-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.payment-modal-header h2 {
+  font-size: 20px;
+  color: #2c3e50;
+  margin: 0;
+  font-weight: 500;
+}
+
+.close-button {
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  color: #95a5a6;
+  transition: color 0.3s;
+}
+
+.close-button:hover {
+  color: #34495e;
+}
+
+.form-group {
+  margin-bottom: 16px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 6px;
+  font-weight: 500;
+  color: #2c3e50;
+  font-size: 14px;
+}
+
+.input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  border: 1.5px solid #e0e0e0;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+  background: white;
+}
+
+.input-wrapper:focus-within {
+  border-color: #3498db;
+  box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.08);
+}
+
+.input-wrapper.invalid {
+  border-color: #e74c3c;
+}
+
+.input-wrapper input,
+.input-wrapper select {
+  width: 100%;
+  padding: 10px;
+  border: none;
+  background: none;
+  font-size: 14px;
+  color: #2c3e50;
+  outline: none;
+}
+
+.input-wrapper input::placeholder {
+  color: #bdc3c7;
+}
+
+.card-icon {
+  width: 40px;
+  height: 25px;
+  margin-right: 12px;
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+}
+
+.card-icon.visa {
+  background-image: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1NzYgMzc3Ij48cGF0aCBmaWxsPSIjMDAyNzlBIiBkPSJNNTc2IDI4MnYzSDQzMmwtNi0zMmgtNDJsLTYgMzJIMjM0bC00LTI0LTEzLTg3LTEzIDg3LTQgMjRIMzdsLTM3LTJWMjgyaDMxbDYtMzJoNDJsNiAzMmgxOThsMTMtODkgMTMgODloMTk4eiIvPjwvc3ZnPg==');
+}
+
+.card-icon.mastercard {
+  background-image: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1NzYgMzc3Ij48Y2lyY2xlIGN4PSIyMDkiIGN5PSIxODgiIHI9IjE3MCIgZmlsbD0iI0VCMDAxQiIvPjxjaXJjbGUgY3g9IjM2NyIgY3k9IjE4OCIgcj0iMTcwIiBmaWxsPSIjRjc5RTFCIi8+PC9zdmc+');
+}
+
+.card-icon.amex {
+  background-image: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1NzYgMzc3Ij48cGF0aCBmaWxsPSIjMDA2ZmNmIiBkPSJNNTc2IDI4MnYzSDQzMmwtNi0zMmgtNDJsLTYgMzJIMjM0bC00LTI0LTEzLTg3LTEzIDg3LTQgMjRIMzdsLTM3LTJWMjgyaDMxbDYtMzJoNDJsNiAzMmgxOThsMTMtODkgMTMgODloMTk4eiIvPjwvc3ZnPg==');
+}
+
+.card-icon.discover {
+  background-image: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1NzYgMzc3Ij48cGF0aCBmaWxsPSIjRkY2QjAwIiBkPSJNNTc2IDI4MnYzSDQzMmwtNi0zMmgtNDJsLTYgMzJIMjM0bC00LTI0LTEzLTg3LTEzIDg3LTQgMjRIMzdsLTM3LTJWMjgyaDMxbDYtMzJoNDJsNiAzMmgxOThsMTMtODkgMTMgODloMTk4eiIvPjwvc3ZnPg==');
+}
+
+.form-row {
+  display: flex;
+  gap: 20px;
+}
+
+.form-row .form-group {
+  flex: 1;
+}
+
+.validation-message {
+  color: #e74c3c;
+  font-size: 12px;
+  margin-top: 5px;
+}
+
+.cvv-hint {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #95a5a6;
+  color: white;
+  font-size: 12px;
+  margin-right: 12px;
+  cursor: help;
+}
+
+.submit-button {
+  width: 100%;
+  padding: 11px;
+  background: #3498db;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  margin-top: 16px;
+}
+
+.submit-button:hover:not(:disabled) {
+  background: #2980b9;
+  transform: translateY(-1px);
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.08);
+}
+
+.submit-button:disabled {
+  background: #bdc3c7;
+  cursor: not-allowed;
+}
+
+.plan-summary {
+  background: #f8f9fa;
+  padding: 16px;
+  border-radius: 6px;
+  margin-bottom: 20px;
+  border: 1px solid #e0e0e0;
+}
+
+.plan-summary h3 {
+  margin: 0 0 12px;
+  color: #2c3e50;
+  font-size: 16px;
+}
+
+.plan-summary p {
+  margin: 6px 0;
+  color: #34495e;
+  font-size: 14px;
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-5px); }
+  75% { transform: translateX(5px); }
+}
+
+.input-wrapper.invalid {
+  animation: shake 0.4s ease-in-out;
+  border-color: #e74c3c;
+}

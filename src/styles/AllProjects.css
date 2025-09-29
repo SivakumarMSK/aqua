@@ -1,0 +1,325 @@
+.all-projects-container {
+  padding-top: 60px;
+  background-color: #f8f9fa;
+  min-height: 100vh;
+}
+
+.header-section {
+  text-align: center;
+  margin-bottom: 2rem;
+  padding: 2rem 0;
+}
+
+.back-button-container {
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.back-button {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid #0d6efd;
+  background: white;
+  transition: all 0.2s ease;
+}
+
+.back-button:hover {
+  background-color: #0d6efd;
+  color: white;
+  transform: translateY(-50%) scale(1.05);
+}
+
+.header-section h1 {
+  color: #2d3748;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+.projects-grid {
+  display: flex !important;
+  gap: 1.5rem !important;
+  width: 100% !important;
+  flex-wrap: nowrap !important;
+  /* Add padding to ensure first and last cards are fully visible */
+  padding: 0 0.25rem !important;
+  /* Calculate width for 4 cards (250px each) + 3 gaps (1.5rem each) */
+  min-width: calc(250px * 4 + 1.5rem * 3) !important;
+  margin: 0 auto !important;
+  margin-bottom: 2rem;
+  overflow-x: auto;
+}
+
+.project-card {
+  --from: #f7fbff;
+  --to: #f1f7ff;
+  --border: #e6f0ff;
+  width: 250px !important;
+  min-width: 250px !important;
+  max-width: 250px !important;
+  height: 150px;
+  transition: all 0.3s ease;
+  cursor: default;
+  border: 2px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+  background: linear-gradient(135deg, var(--from) 0%, var(--to) 100%);
+  background-color: transparent !important;
+  flex: none !important;
+  flex-grow: 0 !important;
+  flex-shrink: 0 !important;
+  flex-basis: 250px !important;
+  box-shadow: 0 2px 6px rgba(0, 89, 255, 0.06);
+  position: relative;
+}
+
+.project-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 10px 18px rgba(0, 89, 255, 0.12);
+  border-color: rgba(0, 89, 255, 0.22);
+}
+
+/* Projects Sub-sections */
+.projects-subsection {
+  margin-bottom: 2rem;
+}
+
+.subsection-header {
+  border-bottom: 2px solid #e9ecef;
+  padding-bottom: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.subsection-header h4 {
+  color: #2d3748;
+  font-weight: 600;
+  font-size: 1.25rem;
+}
+
+.subsection-header .badge {
+  font-size: 0.75rem;
+  padding: 0.25rem 0.5rem;
+}
+
+/* Project Card Variants - match Dashboard exactly */
+.basic-project-card {
+  border-left: 4px solid #0d6efd;
+  transition: all 0.2s ease;
+}
+
+.basic-project-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(13, 110, 253, 0.15);
+}
+
+.advanced-project-card {
+  border-left: 4px solid #198754;
+  transition: all 0.2s ease;
+}
+
+.advanced-project-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(25, 135, 84, 0.15);
+}
+
+/* Empty state for sub-sections */
+.projects-subsection .empty-state-card {
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  border: 2px dashed #dee2e6;
+  border-radius: 12px;
+}
+
+.projects-subsection .empty-state-content h5 {
+  color: #6c757d;
+  font-weight: 500;
+  margin-bottom: 0.5rem;
+}
+
+.projects-subsection .empty-state-content p {
+  color: #adb5bd;
+  font-size: 0.9rem;
+}
+
+.project-card .card-body {
+  padding: 1.25rem;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  background: inherit !important;
+}
+
+.project-card h5 {
+  color: #2c3e50;
+  font-weight: 600;
+  font-size: 1.1rem;
+  margin-bottom: 0.5rem;
+}
+
+.project-details {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 0.5rem;
+  text-align: left;
+  width: 100%;
+}
+
+.kv-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 8px;
+}
+
+.kv-key {
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
+.kv-value {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #1a1f36;
+  word-break: break-word;
+  line-height: 1.3;
+}
+
+.species-names {
+  color: #198754;
+}
+
+.card-cta-br {
+  position: absolute;
+  right: 15px;
+  bottom: 15px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.eye-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(4px);
+  cursor: pointer;
+}
+
+.eye-btn i {
+  color: #0f172a;
+  font-size: 1rem;
+}
+
+.project-card:hover .eye-btn {
+  background: rgba(255, 255, 255, 0.9);
+}
+
+/* Pastel variants cycling - same as Dashboard */
+.projects-grid > .project-card:nth-child(6n+1) { --from: #eaf3ff; --to: #dceaff; --border: #cfe0ff; }
+.projects-grid > .project-card:nth-child(6n+2) { --from: #ffe8f3; --to: #ffd6e8; --border: #ffc2dd; }
+.projects-grid > .project-card:nth-child(6n+3) { --from: #e9fff0; --to: #d6f9e2; --border: #c5f2d5; }
+.projects-grid > .project-card:nth-child(6n+4) { --from: #fff1e3; --to: #ffe3c7; --border: #ffd5ad; }
+.projects-grid > .project-card:nth-child(6n+5) { --from: #f1eaff; --to: #e3d6ff; --border: #d6c5ff; }
+.projects-grid > .project-card:nth-child(6n+6) { --from: #e6fbff; --to: #ccf4ff; --border: #b8eeff; }
+
+/* Filter buttons */
+.filter-buttons {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: center;
+  margin-bottom: 2rem;
+  flex-wrap: wrap;
+}
+
+.filter-buttons .btn {
+  border-radius: 20px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.filter-buttons .btn:hover {
+  transform: translateY(-1px);
+}
+
+/* Empty state */
+.empty-state {
+  text-align: center;
+  padding: 3rem 1rem;
+  color: #6c757d;
+}
+
+.empty-state i {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+  opacity: 0.5;
+}
+
+.empty-state h4 {
+  color: #495057;
+  margin-bottom: 0.5rem;
+}
+
+.empty-state p {
+  font-size: 1.1rem;
+  margin-bottom: 0;
+}
+
+/* Scrollbar hiding for horizontal scroll */
+@media (min-width: 769px) {
+  .projects-grid {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none;  /* Internet Explorer 10+ */
+    padding-bottom: 1rem; /* Space for potential scrollbar */
+  }
+  
+  .projects-grid::-webkit-scrollbar {
+    display: none; /* Chrome, Safari and Opera */
+  }
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .projects-grid {
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 1rem;
+    min-width: auto;
+  }
+  
+  .project-card {
+    width: 250px !important;
+    min-width: 250px !important;
+    max-width: 250px !important;
+    flex-basis: 250px !important;
+  }
+  
+  .header-section {
+    padding: 1rem 0;
+  }
+  
+  .back-button-container {
+    position: static;
+    transform: none;
+    margin-bottom: 1rem;
+  }
+  
+  .filter-buttons {
+    flex-direction: column;
+    align-items: center;
+  }
+  
+  .filter-buttons .btn {
+    width: 200px;
+  }
+}
