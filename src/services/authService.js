@@ -24,7 +24,7 @@ export const changePassword = async (currentPassword, newPassword) => {
       throw new Error('Authentication token not found');
     }
 
-    const response = await fetch('http://13.53.148.164:5000/auth/profile/change-password', {
+    const response = await fetch('/backend/auth/profile/change-password', {
       method: 'PUT',
       headers: {
         'Authorization': `Bearer ${token}`,

@@ -1270,7 +1270,7 @@ const CreateDesignSystem = () => {
 
                     // Log the final request details
                     console.log('Making POST request with:', {
-                      url: `http://13.53.148.164:5000/new_design/api/projects/${projectId}/water-quality-parameters`,
+                      url: `/backend/new_design/api/projects/${projectId}/water-quality-parameters`,
                       method: 'POST',
                       headers: {
                         'Authorization': 'Bearer [token]',
@@ -1297,7 +1297,7 @@ const CreateDesignSystem = () => {
                     setLoadingStep('Submitting water quality parameters...');
                     console.log('Starting water quality parameters POST request...');
                     console.log('Project ID:', projectId);
-                    console.log('Request URL:', `http://13.53.148.164:5000/new_design/api/projects/${projectId}/water-quality-parameters`);
+                    console.log('Request URL:', `/backend/new_design/api/projects/${projectId}/water-quality-parameters`);
                     console.log('Request headers:', {
                       'Authorization': 'Bearer [hidden]',
                       'Content-Type': 'application/json',
@@ -1306,7 +1306,7 @@ const CreateDesignSystem = () => {
                     console.log('Request body:', JSON.stringify(requestBody, null, 2));
 
                     // Make the POST request
-                    const paramResponse = await fetch(`http://13.53.148.164:5000/new_design/api/projects/${projectId}/water-quality-parameters`, {
+                    const paramResponse = await fetch(`/backend/new_design/api/projects/${projectId}/water-quality-parameters`, {
                       method: 'POST',
                       headers: {
                         'Authorization': `Bearer ${token}`,
@@ -1353,7 +1353,7 @@ const CreateDesignSystem = () => {
 
                     // Verify water quality parameters were saved before proceeding
                     console.log('Verifying water quality parameters...');
-                    const initialVerifyResponse = await fetch(`http://13.53.148.164:5000/new_design/api/projects/${projectId}/water-quality-parameters`, {
+                    const initialVerifyResponse = await fetch(`/backend/new_design/api/projects/${projectId}/water-quality-parameters`, {
                       method: 'GET',
                       headers: {
                         'Authorization': `Bearer ${token}`,
@@ -1419,7 +1419,7 @@ const CreateDesignSystem = () => {
                       await new Promise(resolve => setTimeout(resolve, 300 + (retryCount * 200))); // Increasing delay with each retry
 
                       // Verify parameters are available
-                      const checkResponse = await fetch(`http://13.53.148.164:5000/new_design/api/projects/${projectId}/water-quality-parameters`, {
+                      const checkResponse = await fetch(`/backend/new_design/api/projects/${projectId}/water-quality-parameters`, {
                         method: 'GET',
                         headers: {
                           'Authorization': `Bearer ${token}`,
@@ -1456,7 +1456,7 @@ const CreateDesignSystem = () => {
 
                     // Verify the parameters were saved by making a GET request
                     console.log('Verifying parameters were saved...');
-                    const verifyResponse = await fetch(`http://13.53.148.164:5000/new_design/api/projects/${projectId}/water-quality-parameters`, {
+                    const verifyResponse = await fetch(`/backend/new_design/api/projects/${projectId}/water-quality-parameters`, {
                       method: 'GET',
                       headers: {
                         'Authorization': `Bearer ${token}`,
@@ -1493,7 +1493,7 @@ const CreateDesignSystem = () => {
                     await new Promise(resolve => setTimeout(resolve, 500)); // Wait 0.5 seconds
 
                     // Verify one more time before calculations
-                    const finalVerifyResponse = await fetch(`http://13.53.148.164:5000/new_design/api/projects/${projectId}/water-quality-parameters`, {
+                    const finalVerifyResponse = await fetch(`/backend/new_design/api/projects/${projectId}/water-quality-parameters`, {
                       method: 'GET',
                       headers: {
                         'Authorization': `Bearer ${token}`,
@@ -1538,7 +1538,7 @@ const CreateDesignSystem = () => {
 
                     // After successful POST and verification, get the calculations
                     console.log('Starting production calculations GET request...');
-                    console.log('Request URL:', `http://13.53.148.164:5000/formulas/api/projects/${projectId}/production-calculations`);
+                    console.log('Request URL:', `/backend/formulas/api/projects/${projectId}/production-calculations`);
                     
                     // Wait a bit longer to ensure all parameters are processed
                     setLoadingStep('Preparing calculations...');
@@ -1548,7 +1548,7 @@ const CreateDesignSystem = () => {
                     let results;
                     try {
                       // First verify all required parameters are present
-                      const paramsResponse = await fetch(`http://13.53.148.164:5000/new_design/api/projects/${projectId}/water-quality-parameters`, {
+                      const paramsResponse = await fetch(`/backend/new_design/api/projects/${projectId}/water-quality-parameters`, {
                         method: 'GET',
                         headers: {
                           'Authorization': `Bearer ${token}`,
@@ -1565,7 +1565,7 @@ const CreateDesignSystem = () => {
 
                       // Now request the calculations
                       setLoadingStep('Calculating mass balance...');
-                      const calcResponse = await fetch(`http://13.53.148.164:5000/formulas/api/projects/${projectId}/production-calculations`, {
+                      const calcResponse = await fetch(`/backend/formulas/api/projects/${projectId}/production-calculations`, {
                         method: 'GET',
                         headers: {
                           'Authorization': `Bearer ${token}`,

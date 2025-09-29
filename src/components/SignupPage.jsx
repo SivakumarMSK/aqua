@@ -126,7 +126,7 @@ const SignupPage = () => {
     setIsSubmitting(true);
 
     try {
-      const response = await fetch("http://13.53.148.164:5000/auth/register", {
+      const response = await fetch("/backend/auth/register", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

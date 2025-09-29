@@ -18,7 +18,7 @@ const Navbar = () => {
           return;
         }
 
-        const response = await fetch('http://13.53.148.164:5000/auth/profile', {
+        const response = await fetch('/backend/auth/profile', {
           headers: {
             'Authorization': `Bearer ${token}`
           }

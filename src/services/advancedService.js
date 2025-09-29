@@ -1,6 +1,6 @@
 // Advanced calculation API service
 
-const API_BASE = import.meta.env.VITE_API_URL || 'http://13.53.148.164:5000';
+const API_BASE = import.meta.env.VITE_API_URL || '/backend';
 
 export async function postAdvancedParameters(projectId, payload) {
   const token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');

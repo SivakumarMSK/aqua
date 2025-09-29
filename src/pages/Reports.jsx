@@ -137,7 +137,7 @@ const Reports = () => {
   // Handle basic report - use production calculations API
   const handleBasicReport = async (report) => {
     const token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
-    const response = await fetch(`http://13.53.148.164:5000/formulas/api/projects/${report.id}/production-calculations`, {
+    const response = await fetch(`/backend/formulas/api/projects/${report.id}/production-calculations`, {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -215,14 +215,14 @@ const Reports = () => {
     
     // Call both advanced APIs
     const [step6Response, limitingFactorResponse] = await Promise.all([
-      fetch(`http://13.53.148.164:5000/advanced/formulas/api/projects/${report.id}/step_6_results`, {
+      fetch(`/backend/advanced/formulas/api/projects/${report.id}/step_6_results`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
           'Accept': 'application/json'
         }
       }),
-      fetch(`http://13.53.148.164:5000/advanced/formulas/api/projects/${report.id}/limiting_factor`, {
+      fetch(`/backend/advanced/formulas/api/projects/${report.id}/limiting_factor`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -302,7 +302,7 @@ const Reports = () => {
   // Download basic report - use production calculations API
   const downloadBasicReport = async (report) => {
     const token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
-    const response = await fetch(`http://13.53.148.164:5000/formulas/api/projects/${report.id}/production-calculations`, {
+    const response = await fetch(`/backend/formulas/api/projects/${report.id}/production-calculations`, {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -376,14 +376,14 @@ const Reports = () => {
     
     // Call both advanced APIs
     const [step6Response, limitingFactorResponse] = await Promise.all([
-      fetch(`http://13.53.148.164:5000/advanced/formulas/api/projects/${report.id}/step_6_results`, {
+      fetch(`/backend/advanced/formulas/api/projects/${report.id}/step_6_results`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
           'Accept': 'application/json'
         }
       }),
-      fetch(`http://13.53.148.164:5000/advanced/formulas/api/projects/${report.id}/limiting_factor`, {
+      fetch(`/backend/advanced/formulas/api/projects/${report.id}/limiting_factor`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,

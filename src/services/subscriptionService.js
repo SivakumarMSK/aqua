@@ -1,5 +1,5 @@
 // Base API URL
-const API_URL = 'http://13.53.148.164:5000/auth';
+const API_URL = '/backend/auth';
 
 // Test if the API is accessible
 const testApiConnection = async () => {

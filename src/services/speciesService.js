@@ -1,4 +1,4 @@
-const API_URL = 'http://13.53.148.164:5000/species/api';
+const API_URL = '/backend/species/api';
 
 export const getRecommendedValues = async (speciesName) => {
   try {

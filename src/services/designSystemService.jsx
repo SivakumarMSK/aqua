@@ -1,4 +1,4 @@
-const API_URL = 'http://13.53.148.164:5000/new_design/api';
+const API_URL = '/backend/new_design/api';
 
 export const createWaterQualityParameters = async (waterQualityData) => {
   try {

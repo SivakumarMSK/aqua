@@ -1,4 +1,4 @@
-const API_URL = 'http://13.53.148.164:5000/auth';
+const API_URL = '/backend/auth';
 
 export const updateUserProfile = async (profileData) => {
   const token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');

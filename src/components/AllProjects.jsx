@@ -145,7 +145,7 @@ const AllProjects = () => {
       setLoading(true);
       
       const token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
-      const response = await fetch(`http://13.53.148.164:5000/formulas/api/projects/${project.id}/production-calculations`, {
+      const response = await fetch(`/backend/formulas/api/projects/${project.id}/production-calculations`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -243,14 +243,14 @@ const AllProjects = () => {
       
       // Call both advanced APIs
       const [step6Response, limitingFactorResponse] = await Promise.all([
-        fetch(`http://13.53.148.164:5000/advanced/formulas/api/projects/${project.id}/step_6_results`, {
+        fetch(`/backend/advanced/formulas/api/projects/${project.id}/step_6_results`, {
           method: 'GET',
           headers: {
             'Authorization': `Bearer ${token}`,
             'Accept': 'application/json'
           }
         }),
-        fetch(`http://13.53.148.164:5000/advanced/formulas/api/projects/${project.id}/limiting_factor`, {
+        fetch(`/backend/advanced/formulas/api/projects/${project.id}/limiting_factor`, {
           method: 'GET',
           headers: {
             'Authorization': `Bearer ${token}`,

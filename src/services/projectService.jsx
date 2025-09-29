@@ -1,5 +1,5 @@
-const API_URL = 'http://13.53.148.164:5000/new_design/api';
-const FORMULAS_API_URL = 'http://13.53.148.164:5000/formulas/api';
+const API_URL = '/backend/new_design/api';
+const FORMULAS_API_URL = '/backend/formulas/api';
 
 export const getAllProjects = async () => {
   // Get authentication token first
