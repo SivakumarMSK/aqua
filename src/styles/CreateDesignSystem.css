@@ -1,8 +1,14 @@
 .create-ds-container {
     background-color: #F9FAFB;
     min-height: 100vh;
-    padding-top: 60px;
+    padding-top: 80px;
     position: relative;
+}
+
+@media (max-width: 768px) {
+    .create-ds-container {
+        padding-top: 90px;
+    }
 }
 
 .create-ds-content {

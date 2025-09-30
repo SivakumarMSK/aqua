@@ -59,7 +59,10 @@ const AllDesigns = () => {
               <Card.Body>
                 <div className="d-flex justify-content-between align-items-start">
                   <div>
-                    <h5 className="mb-1">{system.design_system_name}</h5>
+                    <h5 className="mb-1 d-flex align-items-center gap-2">
+                      <i className="bi bi-boxes text-primary"></i>
+                      <span>{system.design_system_name}</span>
+                    </h5>
                     <p className="text-muted mb-2">{system.project_name || 'N/A'}</p>
                     <p className="text-muted small mb-0">{new Date(system.created_at).toLocaleDateString()}</p>
                   </div>

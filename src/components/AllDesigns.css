@@ -174,28 +174,87 @@
 }
 
 @media (max-width: 768px) {
-  .designs-grid {
-    grid-template-columns: 1fr !important;
-    gap: 1rem;
-  }
-  
-  .design-card {
-    width: 250px !important;
-    min-width: 250px !important;
-    max-width: 250px !important;
-  }
-}
-
-@media (max-width: 768px) {
   .all-designs-container {
     padding: 1rem;
   }
   
   .header-section {
     margin-bottom: 2rem;
+    text-align: center;
   }
   
   .header-section h1 {
     font-size: 1.8rem;
+    margin-bottom: 1rem;
+  }
+
+  .header-section p {
+    font-size: 1rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .designs-grid {
+    grid-template-columns: 1fr !important;
+    gap: 1.25rem;
+    padding: 0;
+  }
+  
+  .design-card {
+    width: 100% !important;
+    min-width: 100% !important;
+    max-width: 100% !important;
+    height: auto;
+    min-height: 140px;
+  }
+
+  .design-card .card-body {
+    padding: 1.5rem;
+  }
+
+  .design-card h5 {
+    font-size: 1.2rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .design-card p {
+    font-size: 0.95rem;
+    margin-bottom: 1rem;
+  }
+
+  .design-card .badge {
+    font-size: 0.8rem;
+    padding: 0.4rem 0.8rem;
+  }
+
+  .design-card .btn {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    font-size: 0.95rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .all-designs-container {
+    padding: 0.75rem;
+  }
+  
+  .header-section h1 {
+    font-size: 1.6rem;
+  }
+
+  .header-section p {
+    font-size: 0.95rem;
+  }
+
+  .design-card .card-body {
+    padding: 1.25rem;
+  }
+
+  .design-card h5 {
+    font-size: 1.1rem;
+  }
+
+  .design-card p {
+    font-size: 0.9rem;
   }
 }

@@ -7,6 +7,7 @@ import InputGroup from 'react-bootstrap/InputGroup';
 import { getAllDesignSystems } from '../services/designSystemService.jsx';
 import { useNavigate } from 'react-router-dom';
 import { generateMassBalanceCardsPdf, generateAdvancedReportPdf } from '../utils/pdfGenerator';
+import './Reports.css';
 
 const Reports = () => {
   const [reports, setReports] = useState([]);

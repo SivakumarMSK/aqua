@@ -345,8 +345,9 @@ const AllProjects = () => {
               <i className="bi bi-arrow-left"></i>
             </button>
           </div>
-          <h1>
-            {filterType === 'basic' ? 'Basic Projects' : 'Advanced Projects'}
+          <h1 className="d-flex align-items-center justify-content-center gap-2">
+            <i className={`bi ${!projectType ? 'bi-briefcase' : (filterType === 'basic' ? 'bi-layers text-primary' : 'bi-gear-wide-connected text-success')}`}></i>
+            <span>{filterType === 'basic' ? 'Basic Projects' : 'Advanced Projects'}</span>
           </h1>
           <p className="text-muted">
             {filterType === 'basic' ? 'Browse and manage your basic projects' : 'Browse and manage your advanced projects'}
@@ -393,7 +394,10 @@ const AllProjects = () => {
                   <Card.Body>
                     <div className="d-flex justify-content-between align-items-start">
                       <div>
-                        <h5 className="mb-2">{project.name}</h5>
+                        <h5 className="mb-2 d-flex align-items-center gap-2">
+                          <i className={`bi ${projectType === 'basic' ? 'bi-folder2-open text-primary' : 'bi-folder text-success'}`}></i>
+                          <span>{project.name}</span>
+                        </h5>
                         <div className="project-details">
                           <div className="kv-row">
                             <span className="kv-key text-muted">Species</span>

@@ -480,7 +480,7 @@ const Dashboard = () => {
           <Card className="plan-status-card">
             <Card.Body className="d-flex justify-content-between align-items-center">
               <div className="plan-info">
-                <h5 className="mb-1">Current Plan: <span className={`plan-badge ${currentPlan.toLowerCase()}`}>{currentPlan}</span></h5>
+                <h5 className="mb-1"><i className="bi bi-award text-warning me-2"></i>Current Plan: <span className={`plan-badge ${currentPlan.toLowerCase()}`}>{currentPlan}</span></h5>
                 <p className="text-muted mb-0">
                   {currentPlan === 'Free' 
                     ? 'Basic features available. Upgrade for advanced capabilities.' 
@@ -515,7 +515,7 @@ const Dashboard = () => {
         {/* Design Systems Section */}
         <div className="section">
           <div className="section-header">
-            <h3>Your Design Systems</h3>
+            <h3 className="d-flex align-items-center gap-2"><i className="bi bi-diagram-3 text-primary"></i><span>Your Design Systems</span></h3>
             {designSystems.length > 0 && (
               <Button 
                 variant="primary" 
@@ -559,7 +559,7 @@ const Dashboard = () => {
                       <Card.Body>
                         <div className="d-flex justify-content-between align-items-start">
                           <div>
-                            <h5 className="mb-1">{system.design_system_name}</h5>
+                            <h5 className="mb-1"><i className="bi bi-boxes text-primary me-2"></i>{system.design_system_name}</h5>
                             <p className="text-muted mb-2">{system.project_name}</p>
                             <p className="text-muted small mb-0">{formatDate(system.created_at)}</p>
                           </div>
@@ -610,7 +610,7 @@ const Dashboard = () => {
         {/* Your Projects Section */}
         <div className="section">
           <div className="section-header">
-            <h3>Your Projects</h3>
+            <h3 className="d-flex align-items-center gap-2"><i className="bi bi-briefcase text-primary"></i><span>Your Projects</span></h3>
             {(basicProjects.length > 0 || (currentPlan !== 'Free' && advancedProjects.length > 0)) && (
               <DesignCreationDropdown />
             )}
@@ -619,7 +619,7 @@ const Dashboard = () => {
           {/* Basic Projects Sub-container - Show for all plans */}
           <div className="projects-subsection mb-4">
               <div className="subsection-header d-flex justify-content-between align-items-center mb-3">
-                <h4 className="mb-0">Basic Projects</h4>
+                <h4 className="mb-0 d-flex align-items-center gap-2"><i className="bi bi-layers text-primary"></i><span>Basic Projects</span></h4>
               </div>
               <div className="card-list">
                 {basicProjects.length === 0 ? (
@@ -650,7 +650,7 @@ const Dashboard = () => {
                           <Card.Body>
                             <div className="d-flex justify-content-between align-items-start">
                               <div>
-                                <h5 className="mb-2">{project.name}</h5>
+                                <h5 className="mb-2 d-flex align-items-center gap-2"><i className="bi bi-folder2-open text-primary"></i><span>{project.name}</span></h5>
                                 <div className="project-details">
                                   <div className="kv-row">
                                     <span className="kv-key text-muted">Species</span>
@@ -701,7 +701,7 @@ const Dashboard = () => {
           {currentPlan !== 'Free' && (
             <div className="projects-subsection">
             <div className="subsection-header d-flex justify-content-between align-items-center mb-3">
-              <h4 className="mb-0">Advanced Projects</h4>
+              <h4 className="mb-0 d-flex align-items-center gap-2"><i className="bi bi-gear-wide-connected text-success"></i><span>Advanced Projects</span></h4>
             </div>
             <div className="card-list">
               {advancedProjects.length === 0 ? (
@@ -732,7 +732,7 @@ const Dashboard = () => {
                         <Card.Body>
                           <div className="d-flex justify-content-between align-items-start">
                             <div>
-                              <h5 className="mb-2">{project.name}</h5>
+                              <h5 className="mb-2 d-flex align-items-center gap-2"><i className="bi bi-folder text-success"></i><span>{project.name}</span></h5>
                               <div className="project-details">
                                 <div className="kv-row">
                                   <span className="kv-key text-muted">Species</span>

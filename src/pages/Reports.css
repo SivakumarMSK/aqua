@@ -1,0 +1,61 @@
+/* Professional responsive ordering for Reports filters */
+
+/* Base layout polishing */
+.report-type-buttons {
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.search-bar { margin-bottom: 0.75rem; }
+
+.filter-sort-group {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.5rem;
+  align-items: center;
+}
+
+/* Mobile: one-by-one ordering: buttons -> search -> dateFrom/dateTo -> selects */
+@media (max-width: 768px) {
+  /* Override ListLayout grid so we can control vertical stacking */
+  .controls-row {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 0.5rem !important;
+  }
+
+  .report-type-buttons {
+    flex-direction: row; /* keep two buttons side-by-side */
+    flex-wrap: wrap; /* allow next row so search can drop below */
+    width: 100%;
+    order: 1;
+  }
+
+  .report-filter-btn {
+    box-sizing: border-box;
+    flex: 0 0 calc(50% - 0.25rem);
+    max-width: calc(50% - 0.25rem);
+  }
+
+  .search-bar {
+    margin-bottom: 0.5rem;
+    order: 2;
+    width: 100%;
+  }
+  .search-bar .form-control { width: 100%; }
+
+  .filter-sort-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    order: 3;
+    width: 100%;
+  }
+
+  /* Ensure date pickers come before selects */
+  .filter-sort-group input[type="date"] { order: 1; width: 100%; }
+  .filter-sort-group .filter-select { order: 3; width: 100%; }
+  .filter-sort-group .sort-select { order: 4; width: 100%; }
+}
+
+

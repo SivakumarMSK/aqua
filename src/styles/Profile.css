@@ -1,5 +1,6 @@
 .profile-container {
-  padding: 40px 0;
+  padding-top: 100px;
+  padding-bottom: 40px;
   background-color: #f8f9fa;
   min-height: calc(100vh - 60px);
 }
@@ -168,7 +169,8 @@
 
 @media (max-width: 768px) {
   .profile-container {
-    padding: 20px 0;
+    padding-top: 80px;
+    padding-bottom: 20px;
   }
   
   .profile-grid {
@@ -181,5 +183,20 @@
   
   .profile-section {
     padding: 20px;
+  }
+}
+
+@media (max-width: 480px) {
+  .profile-container {
+    padding-top: 70px;
+    padding-bottom: 15px;
+  }
+  
+  .profile-header {
+    padding: 15px;
+  }
+  
+  .profile-section {
+    padding: 15px;
   }
 }

@@ -6,9 +6,13 @@
 
 .header-section {
   text-align: center;
-  margin-bottom: 3rem;
-  padding: 1rem 0;
+  margin-bottom: 1.5rem;
+  padding: 0.25rem 0 0.75rem 0;
   position: relative;
+}
+/* Remove extra top margin on title */
+.header-section h1 {
+  margin-top: 0;
 }
 
 .back-button-container {
@@ -250,8 +254,8 @@
   }
   
   .header-section {
-    margin-bottom: 2rem;
-    padding: 1rem 0;
+    margin-bottom: 0.75rem;
+    padding: 0.25rem 0 0.5rem 0;
   }
   
   .header-section h1 {

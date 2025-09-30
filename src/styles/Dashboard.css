@@ -190,7 +190,7 @@
 .cards-container {
   position: relative;
   margin: 0 auto;
-  overflow: hidden;
+  overflow: visible;
   width: 100%;
   padding: 0.5rem;
 }
@@ -366,7 +366,7 @@
 /* Project Cards Grid */
 .card-list {
   width: 100%;
-  overflow: hidden;
+  overflow: visible;
 }
 
 /* Sliding Arrows */
@@ -441,8 +441,8 @@
   margin-bottom: 1.5rem;
 }
 
-/* Responsive Design */
-@media (max-width: 1200px) {
+/* Responsive Design - hide scrollbar on tablet/desktop but show on mobile */
+@media (max-width: 1200px) and (min-width: 769px) {
   .cards-wrapper {
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
@@ -456,9 +456,267 @@
   }
 }
 
+/* Mobile improvements */
 @media (max-width: 768px) {
+  .dashboard-container {
+    padding-top: 60px;
+  }
+
+  .dashboard-content {
+    padding: 0.5rem 0;
+  }
+
+  .welcome-section {
+    padding: 1rem 0 !important;
+    margin-bottom: 1.5rem;
+  }
+
+  .welcome-section h2 {
+    font-size: 1.75rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .welcome-section .lead {
+    font-size: 1rem;
+    margin-bottom: 1.25rem;
+  }
+
+  .consultation-button {
+    padding: 0.75rem 1.5rem;
+    font-size: 0.95rem;
+  }
+
   .section { 
     padding: 1rem; 
+    margin-bottom: 1.5rem;
+  }
+
+  .section-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+    margin-bottom: 1.25rem;
+  }
+
+  .section-header h3 {
+    font-size: 1.5rem;
+  }
+
+  .add-button {
+    width: 100%;
+    justify-content: center;
+    padding: 0.75rem 1rem;
+    font-size: 0.95rem;
+  }
+
+  .plan-status-card .card-body {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+    padding: 1.25rem;
+  }
+
+  .plan-info h5 {
+    font-size: 1.1rem;
+  }
+
+  .plan-actions .btn {
+    width: 100%;
+    padding: 0.75rem 1rem;
+  }
+
+  .projects-subsection {
+    margin-bottom: 1.5rem;
+  }
+
+  .subsection-header h4 {
+    font-size: 1.2rem;
+  }
+
+  /* Card improvements for mobile - keep single row with scroll */
+  .cards-container {
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .cards-wrapper {
+    display: flex !important;
+    flex-direction: row !important;
+    gap: 1rem !important;
+    padding: 0 0.5rem !important;
+    width: max-content !important; /* grow to fit all cards */
+    flex-wrap: nowrap !important;
+    scrollbar-width: thin;
+    scrollbar-color: #cbd5e0 #f7fafc;
+  }
+
+  .cards-wrapper::-webkit-scrollbar {
+    height: 8px;
+  }
+
+  .cards-wrapper::-webkit-scrollbar-track {
+    background: #f7fafc;
+    border-radius: 4px;
+  }
+
+  .cards-wrapper::-webkit-scrollbar-thumb {
+    background: #cbd5e0;
+    border-radius: 4px;
+  }
+
+  .cards-wrapper::-webkit-scrollbar-thumb:hover {
+    background: #a0aec0;
+  }
+
+  .design-system-card,
+  .project-card {
+    width: 200px !important;
+    min-width: 200px !important;
+    max-width: 200px !important;
+    flex-basis: 200px !important;
+    height: 140px;
+    flex-shrink: 0 !important;
+  }
+
+  .design-system-card .card-body,
+  .project-card .card-body {
+    padding: 1.25rem;
+  }
+
+  .design-system-card h5,
+  .project-card h5 {
+    font-size: 1.1rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .project-details {
+    margin-bottom: 1rem;
+  }
+
+  .kv-row {
+    margin-bottom: 0.5rem;
+  }
+
+  .kv-key {
+    font-size: 0.85rem;
+  }
+
+  .kv-value {
+    font-size: 0.9rem;
+  }
+
+  .card-cta-br {
+    position: static;
+    margin-top: 1rem;
+    display: flex;
+    justify-content: flex-end;
+  }
+
+  .eye-btn {
+    width: 40px;
+    height: 40px;
+    font-size: 1.1rem;
+  }
+
+  .empty-state-card {
+    padding: 2rem 1rem;
+  }
+
+  .empty-state-content h4 {
+    font-size: 1.25rem;
+  }
+
+  .empty-state-content p {
+    font-size: 0.95rem;
+  }
+}
+
+/* Extra small mobile devices */
+@media (max-width: 480px) {
+  .dashboard-content {
+    padding: 0.25rem 0;
+  }
+
+  .welcome-section h2 {
+    font-size: 1.5rem;
+  }
+
+  .welcome-section .lead {
+    font-size: 0.95rem;
+  }
+
+  .section {
+    padding: 0.75rem;
+    margin-bottom: 1.25rem;
+  }
+
+  .section-header h3 {
+    font-size: 1.35rem;
+  }
+
+  .subsection-header h4 {
+    font-size: 1.1rem;
+  }
+
+  /* Maintain single row with scroll for very small screens */
+  .cards-container {
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .cards-wrapper {
+    gap: 0.75rem !important;
+    padding: 0 0.25rem !important;
+    scrollbar-width: thin;
+    scrollbar-color: #cbd5e0 #f7fafc;
+    width: max-content !important; /* grow to fit all cards */
+  }
+
+  .cards-wrapper::-webkit-scrollbar {
+    height: 6px;
+  }
+
+  .cards-wrapper::-webkit-scrollbar-track {
+    background: #f7fafc;
+    border-radius: 3px;
+  }
+
+  .cards-wrapper::-webkit-scrollbar-thumb {
+    background: #cbd5e0;
+    border-radius: 3px;
+  }
+
+  .cards-wrapper::-webkit-scrollbar-thumb:hover {
+    background: #a0aec0;
+  }
+
+  .design-system-card,
+  .project-card {
+    width: 180px !important;
+    min-width: 180px !important;
+    max-width: 180px !important;
+    flex-basis: 180px !important;
+    height: 130px;
+  }
+
+  .design-system-card .card-body,
+  .project-card .card-body {
+    padding: 1rem;
+  }
+
+  .design-system-card h5,
+  .project-card h5 {
+    font-size: 1rem;
+  }
+
+  .plan-status-card .card-body {
+    padding: 1rem;
+  }
+
+  .plan-info h5 {
+    font-size: 1rem;
   }
 }
 

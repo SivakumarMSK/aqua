@@ -4,6 +4,7 @@ import "../styles/navbar.css";
 
 const Navbar = () => {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [userProfile, setUserProfile] = useState(null);
   const [profileLoading, setProfileLoading] = useState(true);
   const profileRef = useRef(null);
@@ -49,16 +50,57 @@ const Navbar = () => {
       }
     };
 
+    const handleResize = () => {
+      if (window.innerWidth > 991) {
+        setIsMobileMenuOpen(false);
+      }
+    };
+
+    const handleEscape = (event) => {
+      if (event.key === 'Escape') {
+        setIsMobileMenuOpen(false);
+        setIsProfileOpen(false);
+      }
+    };
+
     document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('keydown', handleEscape);
+    window.addEventListener('resize', handleResize);
+    
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleEscape);
+      window.removeEventListener('resize', handleResize);
     };
   }, []);
+
+  // Handle body scroll lock when mobile menu is open
+  useEffect(() => {
+    if (isMobileMenuOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [isMobileMenuOpen]);
 
   const handleLogout = () => {
     localStorage.clear();
     sessionStorage.clear();
+    setIsMobileMenuOpen(false);
     navigate('/login');
+  };
+
+  const toggleMobileMenu = () => {
+    setIsMobileMenuOpen(!isMobileMenuOpen);
+    setIsProfileOpen(false);
+  };
+
+  const closeMobileMenu = () => {
+    setIsMobileMenuOpen(false);
   };
   return (
     <nav className="navbar navbar-expand-lg fixed-top custom-navbar">
@@ -70,36 +112,37 @@ const Navbar = () => {
         </Link>
 
         {/* Mobile toggle */}
-        <button className="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
-          <span className="navbar-toggler-icon"></span>
+        <button 
+          className={`mobile-menu-toggle ${isMobileMenuOpen ? 'active' : ''}`}
+          onClick={toggleMobileMenu}
+          aria-label="Toggle navigation"
+        >
+          <span></span>
+          <span></span>
+          <span></span>
         </button>
 
-        {/* Center Links - Top-level links without icons for minimal Apple-like design */}
-        <div className="collapse navbar-collapse" id="navbarNav">
+        {/* Desktop Navigation */}
+        <div className="desktop-nav">
           <ul className="navbar-nav mx-auto gap-lg-4 gap-2 text-center">
-            {/* Dashboard Section */}
             <li className="nav-item">
-  <NavLink className="nav-link custom-link d-flex align-items-center" to="/dashboard">
-    <i className="bi bi-speedometer2 fs-4 text-primary me-2" aria-hidden="true"></i>
-    Dashboard
-  </NavLink>
-</li>
+              <NavLink className="nav-link custom-link d-flex align-items-center" to="/dashboard">
+                <i className="bi bi-speedometer2 fs-4 text-primary me-2" aria-hidden="true"></i>
+                Dashboard
+              </NavLink>
+            </li>
             <li className="nav-item">
               <NavLink className="nav-link custom-link d-flex align-items-center" to="/design-systems/new">
                 <i className="bi bi-file-earmark-code fs-4 text-primary me-2" aria-hidden="true"></i>
                 Design System
               </NavLink>
             </li>
-
-            {/* Projects Section */}
             <li className="nav-item">
               <NavLink className="nav-link custom-link d-flex align-items-center" to="/all-projects">
                 <i className="bi bi-briefcase fs-4 text-primary me-2" aria-hidden="true"></i>
                 Projects
               </NavLink>
             </li>
-
-            {/* Reports Section */}
             <li className="nav-item">
               <NavLink className="nav-link custom-link d-flex align-items-center" to="/reports">
                 <i className="bi bi-bar-chart fs-4 text-primary me-2" aria-hidden="true"></i>
@@ -108,14 +151,7 @@ const Navbar = () => {
             </li>
           </ul>
 
-          {/* Right - Actions */}
           <div className="nav-actions">
-            {/* Upgrade Plan Button */}
-           {/*  <Link to="/plans" className="upgrade-btn">
-              <i className="bi bi-star-fill me-1"></i>
-              Upgrade Plan
-            </Link> */}
-            
             <div className="profile-menu" ref={profileRef}>
               <button 
                 className="profile-link" 
@@ -162,6 +198,77 @@ const Navbar = () => {
             </div>
           </div>
         </div>
+
+        {/* Mobile Navigation Overlay */}
+        {isMobileMenuOpen && (
+          <div className="mobile-nav-overlay" onClick={closeMobileMenu}>
+            <div className="mobile-nav-content" onClick={(e) => e.stopPropagation()}>
+              <div className="mobile-nav-header">
+                <img src="/aqua-logo.jpg" alt="Aqua Logo" className="mobile-nav-logo" />
+                <span className="mobile-nav-title">Aqua BluePrint</span>
+              </div>
+              
+              <ul className="mobile-nav-menu">
+                <li>
+                  <NavLink to="/dashboard" onClick={closeMobileMenu} className="mobile-nav-link">
+                    <i className="bi bi-speedometer2"></i>
+                    <span>Dashboard</span>
+                  </NavLink>
+                </li>
+                <li>
+                  <NavLink to="/design-systems/new" onClick={closeMobileMenu} className="mobile-nav-link">
+                    <i className="bi bi-file-earmark-code"></i>
+                    <span>Design System</span>
+                  </NavLink>
+                </li>
+                <li>
+                  <NavLink to="/all-projects" onClick={closeMobileMenu} className="mobile-nav-link">
+                    <i className="bi bi-briefcase"></i>
+                    <span>Projects</span>
+                  </NavLink>
+                </li>
+                <li>
+                  <NavLink to="/reports" onClick={closeMobileMenu} className="mobile-nav-link">
+                    <i className="bi bi-bar-chart"></i>
+                    <span>Reports</span>
+                  </NavLink>
+                </li>
+              </ul>
+
+              <div className="mobile-nav-footer">
+                <div className="mobile-user-info">
+                  <i className="bi bi-person-circle"></i>
+                  <div>
+                    <h6>
+                      {profileLoading ? (
+                        <span className="loading-text">Loading...</span>
+                      ) : (
+                        userProfile?.full_name || userProfile?.username || 'User'
+                      )}
+                    </h6>
+                    <span>
+                      {profileLoading ? (
+                        <span className="loading-text">Loading...</span>
+                      ) : (
+                        userProfile?.email || 'No email'
+                      )}
+                    </span>
+                  </div>
+                </div>
+                <div className="mobile-nav-actions">
+                  <Link to="/profile" onClick={closeMobileMenu} className="mobile-nav-action">
+                    <i className="bi bi-person"></i>
+                    Profile Settings
+                  </Link>
+                  <button onClick={handleLogout} className="mobile-nav-action logout">
+                    <i className="bi bi-box-arrow-right"></i>
+                    Logout
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </nav>
   );
