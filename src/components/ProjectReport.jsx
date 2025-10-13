@@ -427,131 +427,191 @@ const ProjectReport = () => {
               {/* Stage 7 Report */}
               {outputs.stage7Results && (activeReportTab === 'all' || activeReportTab === 'stage7') && (
                 <div className="report-cards">
-                  <h5 className="mb-3">Stage 7: Bio Filter Parameters</h5>
+                  {/* Stage 7 Title */}
+                  <h4 className="mb-4 text-primary">Stage 7: Bio Filter & Sump Size</h4>
+                  
+                  <h5 className="mb-3">Bio Filter Parameters</h5>
                   
                   {/* Bio Filter Parameters */}
-                  <div className="mb-4">
-                    <h6 className="text-primary mb-3">Bio Filter Parameters</h6>
-                    <div className="row g-3">
-                      <div className="col-md-6">
-                        <Card className="h-100 shadow-sm bio-filter-card">
-                          <Card.Body>
-                            <Card.Title className="text-primary">System Overview</Card.Title>
-                            <div className="mt-3">
-                              <div className="metric-row"><span className="label">VTR Temperature Compensation</span><strong>{outputs.stage7Results?.['bio.VTR_compensation'] ?? 0}</strong></div>
-                              <div className="metric-row"><span className="label">Vessel Shape</span><strong>{outputs.stage7Results?.['bio.shape'] ?? '-'}</strong></div>
-                              <div className="metric-row"><span className="label">VTR Use</span><strong>{outputs.stage7Results?.bioVTR_use ?? 0}</strong></div>
-                              <div className="metric-row"><span className="label">Temperature Used</span><strong>{outputs.stage7Results?.temperature_used ?? 0}°C</strong></div>
-                              <div className="metric-row"><span className="label">Temp Compensation Factor</span><strong>{outputs.stage7Results?.temp_compensation_factor ?? 0}</strong></div>
-                            </div>
-                          </Card.Body>
-                        </Card>
-                      </div>
+                  <div className="row g-4 mb-4">
+                    <div className="col-md-6">
+                      <Card className="h-100 shadow-sm bio-filter-card">
+                        <Card.Body>
+                          <Card.Title className="text-primary">Bio Filter Parameters</Card.Title>
+                          <div className="mt-3">
+                            <div className="metric-row"><span className="label">VTR Used</span><strong>{outputs.stage7Results?.bioVTR_use ?? 0}</strong></div>
+                            <div className="metric-row"><span className="label">VTR Compensation</span><strong>{outputs.stage7Results?.['bio.VTR_compensation'] ?? 0}</strong></div>
+                            <div className="metric-row"><span className="label">Shape</span><strong>{outputs.stage7Results?.['bio.shape'] ?? 'N/A'}</strong></div>
+                            <div className="metric-row"><span className="label">Temperature Used</span><strong>{outputs.stage7Results?.temperature_used ?? 0}°C</strong></div>
+                            <div className="metric-row"><span className="label">Temp Compensation Factor</span><strong>{outputs.stage7Results?.temp_compensation_factor ?? 0}</strong></div>
+                          </div>
+                        </Card.Body>
+                      </Card>
+                    </div>
+                    <div className="col-md-6">
+                      <Card className="h-100 shadow-sm sump-card">
+                        <Card.Body>
+                          <Card.Title className="text-primary">System Overview</Card.Title>
+                          <div className="mt-3">
+                            <div className="metric-row"><span className="label">Project ID</span><strong>{outputs.stage7Results?.project_id ?? 0}</strong></div>
+                            <div className="metric-row"><span className="label">Status</span><strong>{outputs.stage7Results?.status ?? 'N/A'}</strong></div>
+                            <div className="metric-row"><span className="label">Biofilter Parameters</span><strong>{Object.keys(outputs.stage7Results?.biofilter_parameters || {}).length} items</strong></div>
+                          </div>
+                        </Card.Body>
+                      </Card>
                     </div>
                   </div>
 
-                  {/* Stage 1 */}
-                  <div className="mb-4">
-                    <h6 className="text-primary mb-3">Stage 1</h6>
-                    <div className="row g-3">
-                      <div className="col-md-6">
-                        <Card className="h-100 shadow-sm">
-                          <Card.Body>
-                            <Card.Title className="text-primary">Stage 1 Parameters</Card.Title>
-                            <div className="mt-3">
-                              <div className="metric-row"><span className="label">Daily TAN Production Rate</span><strong>{outputs.stage7Results?.DailyTAN_gday_Stage1 ?? 0}</strong></div>
-                              <div className="metric-row"><span className="label">Daily TAN After Passive Nitrification</span><strong>{outputs.stage7Results?.DailyTANpassive_gday_Stage1 ?? 0}</strong></div>
-                              <div className="metric-row"><span className="label">Design VTR</span><strong>{outputs.stage7Results?.['design.VTR_Stage1'] ?? 0}</strong></div>
-                              <div className="metric-row"><span className="label">Media Volume Required</span><strong>{outputs.stage7Results?.['biomedia.Required_Stage1'] ?? 0}</strong></div>
-                              <div className="metric-row"><span className="label">MBBR Volume</span><strong>{outputs.stage7Results?.['MBBR.vol_Stage1'] ?? 0}</strong></div>
-                            </div>
-                          </Card.Body>
-                        </Card>
-                      </div>
-                      <div className="col-md-6">
-                        <Card className="h-100 shadow-sm">
-                          <Card.Body>
-                            <Card.Title className="text-primary">MBBR Details</Card.Title>
-                            <div className="mt-3">
-                              <div className="metric-row"><span className="label">Vessel Diameter (Ideal)</span><strong>{outputs.stage7Results?.['MBBR.dia_Stage1'] ?? 0}</strong></div>
-                              <div className="metric-row"><span className="label">Vessel Height (Ideal)</span><strong>{outputs.stage7Results?.['MBBR.high_Stage1'] ?? 0}</strong></div>
-                              <div className="metric-row"><span className="label">Vessel Height (Rectangular)</span><strong>{outputs.stage7Results?.['MBBR.highRect_Stage1'] ?? 0}</strong></div>
-                              <div className="metric-row"><span className="label">Vessel Width</span><strong>{outputs.stage7Results?.['MBBR.wid_Stage1'] ?? 0}</strong></div>
-                              <div className="metric-row"><span className="label">Vessel Length</span><strong>{outputs.stage7Results?.['MBBR.len_Stage1'] ?? 0}</strong></div>
-                            </div>
-                          </Card.Body>
-                        </Card>
-                      </div>
+                  {/* Stage 1, 2, 3 Results */}
+                  <div className="row g-4 mb-4">
+                    {/* Stage 1 */}
+                    <div className="col-md-4">
+                      <Card className="h-100 shadow-sm">
+                        <Card.Body>
+                          <Card.Title className="text-success">Stage 1 (Juvenile)</Card.Title>
+                          <div className="mt-3">
+                            {/* Daily TAN Production */}
+                            <h6 className="text-muted mb-2">Daily TAN Production Rate</h6>
+                            <div className="metric-row"><span className="label">Total (g/day)</span><strong>{outputs.stage7Results?.DailyTAN_gday_Stage1 ?? 0}</strong></div>
+                            <div className="metric-row"><span className="label">After Passive Nitrification (g/day)</span><strong>{outputs.stage7Results?.DailyTANpassive_gday_Stage1 ?? 0}</strong></div>
+                            
+                            {/* Design VTR */}
+                            <h6 className="text-muted mb-2 mt-3">Design VTR</h6>
+                            <div className="metric-row"><span className="label">Design VTR</span><strong>{outputs.stage7Results?.['design.VTR_Stage1'] ?? 0}</strong></div>
+                            
+                            {/* Media Volume Required */}
+                            <h6 className="text-muted mb-2 mt-3">Media Volume Required</h6>
+                            <div className="metric-row"><span className="label">Media Required (m³)</span><strong>{outputs.stage7Results?.['biomedia.Required_Stage1'] ?? 0}</strong></div>
+                            
+                            {/* MBBR Volume */}
+                            <h6 className="text-muted mb-2 mt-3">MBBR Volume</h6>
+                            <div className="metric-row"><span className="label">MBBR Volume (m³)</span><strong>{outputs.stage7Results?.['MBBR.vol_Stage1'] ?? 0}</strong></div>
+                            
+                            {/* Round Vessel */}
+                            <h6 className="text-muted mb-2 mt-3">Round Vessel</h6>
+                            <div className="metric-row"><span className="label">Vessel Diameter (m)</span><strong>{outputs.stage7Results?.['MBBR.dia_Stage1'] ?? 0}</strong></div>
+                            <div className="metric-row"><span className="label">Vessel Height (m)</span><strong>{outputs.stage7Results?.['MBBR.high_Stage1'] ?? 0}</strong></div>
+                            
+                            {/* Rectangular Vessel */}
+                            <h6 className="text-muted mb-2 mt-3">Rectangular Vessel</h6>
+                            <div className="metric-row"><span className="label">Vessel Height (m)</span><strong>{outputs.stage7Results?.['MBBR.highRect_Stage1'] ?? 0}</strong></div>
+                            <div className="metric-row"><span className="label">Vessel Width (m)</span><strong>{outputs.stage7Results?.['MBBR.wid_Stage1'] ?? 0}</strong></div>
+                            <div className="metric-row"><span className="label">Vessel Length (m)</span><strong>{outputs.stage7Results?.['MBBR.len_Stage1'] ?? 0}</strong></div>
+                            
+                            {/* Aeration */}
+                            <h6 className="text-muted mb-2 mt-3">Aeration</h6>
+                            <div className="metric-row"><span className="label">Volume Air Required for Mixing (x5 vol)</span><strong>{outputs.stage7Results?.['MBBR.air_Stage1'] ?? 0}</strong></div>
+                            <div className="metric-row"><span className="label">Volume Air Required (with 50% spare capacity)</span><strong>{outputs.stage7Results?.['MBBR.air_Stage1_spare'] ?? 0}</strong></div>
+                            
+                            {/* Sump Sizing */}
+                            <h6 className="text-muted mb-2 mt-3">Sump Sizing</h6>
+                            <div className="metric-row"><span className="label">3 min Full Flow (m³)</span><strong>{outputs.stage7Results?.['sump.Size_3min_Stage1'] ?? 0}</strong></div>
+                            <div className="metric-row"><span className="label">5 min Full Flow (m³)</span><strong>{outputs.stage7Results?.['sump.Size_5min_Stage1'] ?? 0}</strong></div>
+                            <div className="metric-row"><span className="label">Sump Total Volume (m³)</span><strong>{outputs.stage7Results?.['sump.totvol_Stage1'] ?? 0}</strong></div>
+                            <div className="metric-row"><span className="label">Total System Volume (m³)</span><strong>{outputs.stage7Results?.['vol.TotalSyst_Stage1'] ?? 0}</strong></div>
+                          </div>
+                        </Card.Body>
+                      </Card>
                     </div>
-                  </div>
 
-                  {/* Stage 2 */}
-                  <div className="mb-4">
-                    <h6 className="text-primary mb-3">Stage 2</h6>
-                    <div className="row g-3">
-                      <div className="col-md-6">
-                        <Card className="h-100 shadow-sm">
-                          <Card.Body>
-                            <Card.Title className="text-primary">Stage 2 Parameters</Card.Title>
-                            <div className="mt-3">
-                              <div className="metric-row"><span className="label">Daily TAN Production Rate</span><strong>{outputs.stage7Results?.DailyTAN_gday_Stage2 ?? 0}</strong></div>
-                              <div className="metric-row"><span className="label">Daily TAN After Passive Nitrification</span><strong>{outputs.stage7Results?.DailyTANpassive_gday_Stage2 ?? 0}</strong></div>
-                              <div className="metric-row"><span className="label">Design VTR</span><strong>{outputs.stage7Results?.['design.VTR_Stage2'] ?? 0}</strong></div>
-                              <div className="metric-row"><span className="label">Media Volume Required</span><strong>{outputs.stage7Results?.['biomedia.Required_Stage2'] ?? 0}</strong></div>
-                              <div className="metric-row"><span className="label">MBBR Volume</span><strong>{outputs.stage7Results?.['MBBR.vol_Stage2'] ?? 0}</strong></div>
-                            </div>
-                          </Card.Body>
-                        </Card>
-                      </div>
-                      <div className="col-md-6">
-                        <Card className="h-100 shadow-sm">
-                          <Card.Body>
-                            <Card.Title className="text-primary">MBBR Details</Card.Title>
-                            <div className="mt-3">
-                              <div className="metric-row"><span className="label">Vessel Diameter (Ideal)</span><strong>{outputs.stage7Results?.['MBBR.dia_Stage2'] ?? 0}</strong></div>
-                              <div className="metric-row"><span className="label">Vessel Height (Ideal)</span><strong>{outputs.stage7Results?.['MBBR.high_Stage2'] ?? 0}</strong></div>
-                              <div className="metric-row"><span className="label">Vessel Height (Rectangular)</span><strong>{outputs.stage7Results?.['MBBR.highRect_Stage2'] ?? 0}</strong></div>
-                              <div className="metric-row"><span className="label">Vessel Width</span><strong>{outputs.stage7Results?.['MBBR.wid_Stage2'] ?? 0}</strong></div>
-                              <div className="metric-row"><span className="label">Vessel Length</span><strong>{outputs.stage7Results?.['MBBR.len_Stage2'] ?? 0}</strong></div>
-                            </div>
-                          </Card.Body>
-                        </Card>
-                      </div>
+                    {/* Stage 2 */}
+                    <div className="col-md-4">
+                      <Card className="h-100 shadow-sm">
+                        <Card.Body>
+                          <Card.Title className="text-warning">Stage 2 (Fingerling)</Card.Title>
+                          <div className="mt-3">
+                            {/* Daily TAN Production */}
+                            <h6 className="text-muted mb-2">Daily TAN Production Rate</h6>
+                            <div className="metric-row"><span className="label">Total (g/day)</span><strong>{outputs.stage7Results?.DailyTAN_gday_Stage2 ?? 0}</strong></div>
+                            <div className="metric-row"><span className="label">After Passive Nitrification (g/day)</span><strong>{outputs.stage7Results?.DailyTANpassive_gday_Stage2 ?? 0}</strong></div>
+                            
+                            {/* Design VTR */}
+                            <h6 className="text-muted mb-2 mt-3">Design VTR</h6>
+                            <div className="metric-row"><span className="label">Design VTR</span><strong>{outputs.stage7Results?.['design.VTR_Stage2'] ?? 0}</strong></div>
+                            
+                            {/* Media Volume Required */}
+                            <h6 className="text-muted mb-2 mt-3">Media Volume Required</h6>
+                            <div className="metric-row"><span className="label">Media Required (m³)</span><strong>{outputs.stage7Results?.['biomedia.Required_Stage2'] ?? 0}</strong></div>
+                            
+                            {/* MBBR Volume */}
+                            <h6 className="text-muted mb-2 mt-3">MBBR Volume</h6>
+                            <div className="metric-row"><span className="label">MBBR Volume (m³)</span><strong>{outputs.stage7Results?.['MBBR.vol_Stage2'] ?? 0}</strong></div>
+                            
+                            {/* Round Vessel */}
+                            <h6 className="text-muted mb-2 mt-3">Round Vessel</h6>
+                            <div className="metric-row"><span className="label">Vessel Diameter (m)</span><strong>{outputs.stage7Results?.['MBBR.dia_Stage2'] ?? 0}</strong></div>
+                            <div className="metric-row"><span className="label">Vessel Height (m)</span><strong>{outputs.stage7Results?.['MBBR.high_Stage2'] ?? 0}</strong></div>
+                            
+                            {/* Rectangular Vessel */}
+                            <h6 className="text-muted mb-2 mt-3">Rectangular Vessel</h6>
+                            <div className="metric-row"><span className="label">Vessel Height (m)</span><strong>{outputs.stage7Results?.['MBBR.highRect_Stage2'] ?? 0}</strong></div>
+                            <div className="metric-row"><span className="label">Vessel Width (m)</span><strong>{outputs.stage7Results?.['MBBR.wid_Stage2'] ?? 0}</strong></div>
+                            <div className="metric-row"><span className="label">Vessel Length (m)</span><strong>{outputs.stage7Results?.['MBBR.len_Stage2'] ?? 0}</strong></div>
+                            
+                            {/* Aeration */}
+                            <h6 className="text-muted mb-2 mt-3">Aeration</h6>
+                            <div className="metric-row"><span className="label">Volume Air Required for Mixing (x5 vol)</span><strong>{outputs.stage7Results?.['MBBR.air_Stage2'] ?? 0}</strong></div>
+                            <div className="metric-row"><span className="label">Volume Air Required (with 50% spare capacity)</span><strong>{outputs.stage7Results?.['MBBR.air_Stage2_spare'] ?? 0}</strong></div>
+                            
+                            {/* Sump Sizing */}
+                            <h6 className="text-muted mb-2 mt-3">Sump Sizing</h6>
+                            <div className="metric-row"><span className="label">3 min Full Flow (m³)</span><strong>{outputs.stage7Results?.['sump.Size_3min_Stage2'] ?? 0}</strong></div>
+                            <div className="metric-row"><span className="label">5 min Full Flow (m³)</span><strong>{outputs.stage7Results?.['sump.Size_5min_Stage2'] ?? 0}</strong></div>
+                            <div className="metric-row"><span className="label">Sump Total Volume (m³)</span><strong>{outputs.stage7Results?.['sump.totvol_Stage2'] ?? 0}</strong></div>
+                            <div className="metric-row"><span className="label">Total System Volume (m³)</span><strong>{outputs.stage7Results?.['vol.TotalSyst_Stage2'] ?? 0}</strong></div>
+                          </div>
+                        </Card.Body>
+                      </Card>
                     </div>
-                  </div>
 
-                  {/* Stage 3 */}
-                  <div className="mb-4">
-                    <h6 className="text-primary mb-3">Stage 3</h6>
-                    <div className="row g-3">
-                      <div className="col-md-6">
-                        <Card className="h-100 shadow-sm">
-                          <Card.Body>
-                            <Card.Title className="text-primary">Stage 3 Parameters</Card.Title>
-                            <div className="mt-3">
-                              <div className="metric-row"><span className="label">Daily TAN Production Rate</span><strong>{outputs.stage7Results?.DailyTAN_gday_Stage3 ?? 0}</strong></div>
-                              <div className="metric-row"><span className="label">Daily TAN After Passive Nitrification</span><strong>{outputs.stage7Results?.DailyTANpassive_gday_Stage3 ?? 0}</strong></div>
-                              <div className="metric-row"><span className="label">Design VTR</span><strong>{outputs.stage7Results?.['design.VTR_Stage3'] ?? 0}</strong></div>
-                              <div className="metric-row"><span className="label">Media Volume Required</span><strong>{outputs.stage7Results?.['biomedia.Required_Stage3'] ?? 0}</strong></div>
-                              <div className="metric-row"><span className="label">MBBR Volume</span><strong>{outputs.stage7Results?.['MBBR.vol_Stage3'] ?? 0}</strong></div>
-                            </div>
-                          </Card.Body>
-                        </Card>
-                      </div>
-                      <div className="col-md-6">
-                        <Card className="h-100 shadow-sm">
-                          <Card.Body>
-                            <Card.Title className="text-primary">MBBR Details</Card.Title>
-                            <div className="mt-3">
-                              <div className="metric-row"><span className="label">Vessel Diameter (Ideal)</span><strong>{outputs.stage7Results?.['MBBR.dia_Stage3'] ?? 0}</strong></div>
-                              <div className="metric-row"><span className="label">Vessel Height (Ideal)</span><strong>{outputs.stage7Results?.['MBBR.high_Stage3'] ?? 0}</strong></div>
-                              <div className="metric-row"><span className="label">Vessel Height (Rectangular)</span><strong>{outputs.stage7Results?.['MBBR.highRect_Stage3'] ?? 0}</strong></div>
-                              <div className="metric-row"><span className="label">Vessel Width</span><strong>{outputs.stage7Results?.['MBBR.wid_Stage3'] ?? 0}</strong></div>
-                              <div className="metric-row"><span className="label">Vessel Length</span><strong>{outputs.stage7Results?.['MBBR.len_Stage3'] ?? 0}</strong></div>
-                            </div>
-                          </Card.Body>
-                        </Card>
-                      </div>
+                    {/* Stage 3 */}
+                    <div className="col-md-4">
+                      <Card className="h-100 shadow-sm">
+                        <Card.Body>
+                          <Card.Title className="text-danger">Stage 3 (Growout)</Card.Title>
+                          <div className="mt-3">
+                            {/* Daily TAN Production */}
+                            <h6 className="text-muted mb-2">Daily TAN Production Rate</h6>
+                            <div className="metric-row"><span className="label">Total (g/day)</span><strong>{outputs.stage7Results?.DailyTAN_gday_Stage3 ?? 0}</strong></div>
+                            <div className="metric-row"><span className="label">After Passive Nitrification (g/day)</span><strong>{outputs.stage7Results?.DailyTANpassive_gday_Stage3 ?? 0}</strong></div>
+                            
+                            {/* Design VTR */}
+                            <h6 className="text-muted mb-2 mt-3">Design VTR</h6>
+                            <div className="metric-row"><span className="label">Design VTR</span><strong>{outputs.stage7Results?.['design.VTR_Stage3'] ?? 0}</strong></div>
+                            
+                            {/* Media Volume Required */}
+                            <h6 className="text-muted mb-2 mt-3">Media Volume Required</h6>
+                            <div className="metric-row"><span className="label">Media Required (m³)</span><strong>{outputs.stage7Results?.['biomedia.Required_Stage3'] ?? 0}</strong></div>
+                            
+                            {/* MBBR Volume */}
+                            <h6 className="text-muted mb-2 mt-3">MBBR Volume</h6>
+                            <div className="metric-row"><span className="label">MBBR Volume (m³)</span><strong>{outputs.stage7Results?.['MBBR.vol_Stage3'] ?? 0}</strong></div>
+                            
+                            {/* Round Vessel */}
+                            <h6 className="text-muted mb-2 mt-3">Round Vessel</h6>
+                            <div className="metric-row"><span className="label">Vessel Diameter (m)</span><strong>{outputs.stage7Results?.['MBBR.dia_Stage3'] ?? 0}</strong></div>
+                            <div className="metric-row"><span className="label">Vessel Height (m)</span><strong>{outputs.stage7Results?.['MBBR.high_Stage3'] ?? 0}</strong></div>
+                            
+                            {/* Rectangular Vessel */}
+                            <h6 className="text-muted mb-2 mt-3">Rectangular Vessel</h6>
+                            <div className="metric-row"><span className="label">Vessel Height (m)</span><strong>{outputs.stage7Results?.['MBBR.highRect_Stage3'] ?? 0}</strong></div>
+                            <div className="metric-row"><span className="label">Vessel Width (m)</span><strong>{outputs.stage7Results?.['MBBR.wid_Stage3'] ?? 0}</strong></div>
+                            <div className="metric-row"><span className="label">Vessel Length (m)</span><strong>{outputs.stage7Results?.['MBBR.len_Stage3'] ?? 0}</strong></div>
+                            
+                            {/* Aeration */}
+                            <h6 className="text-muted mb-2 mt-3">Aeration</h6>
+                            <div className="metric-row"><span className="label">Volume Air Required for Mixing (x5 vol)</span><strong>{outputs.stage7Results?.['MBBR.air_Stage3'] ?? 0}</strong></div>
+                            <div className="metric-row"><span className="label">Volume Air Required (with 50% spare capacity)</span><strong>{outputs.stage7Results?.['MBBR.air_Stage3_spare'] ?? 0}</strong></div>
+                            
+                            {/* Sump Sizing */}
+                            <h6 className="text-muted mb-2 mt-3">Sump Sizing</h6>
+                            <div className="metric-row"><span className="label">3 min Full Flow (m³)</span><strong>{outputs.stage7Results?.['sump.Size_3min_Stage3'] ?? 0}</strong></div>
+                            <div className="metric-row"><span className="label">5 min Full Flow (m³)</span><strong>{outputs.stage7Results?.['sump.Size_5min_Stage3'] ?? 0}</strong></div>
+                            <div className="metric-row"><span className="label">Sump Total Volume (m³)</span><strong>{outputs.stage7Results?.['sump.totvol_Stage3'] ?? 0}</strong></div>
+                            <div className="metric-row"><span className="label">Total System Volume (m³)</span><strong>{outputs.stage7Results?.['vol.TotalSyst_Stage3'] ?? 0}</strong></div>
+                          </div>
+                        </Card.Body>
+                      </Card>
                     </div>
                   </div>
                 </div>

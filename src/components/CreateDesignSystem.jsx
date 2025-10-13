@@ -4,6 +4,8 @@ import { getRecommendedValues, getSpecies } from '../services/speciesService';
 import { createDesignSystem, createWaterQualityParameters } from '../services/designSystemService.jsx';
 import Swal from 'sweetalert2';
 import { postAdvancedParameters, getAdvancedStep6Results, getAdvancedLimitingFactor } from '../services/advancedService';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 // Stage 7 API functions
 const postStage7Parameters = async (projectId, payload) => {
@@ -169,7 +171,7 @@ const getStage8Results = async (projectId) => {
     };
   }
 };
-import { generateMassBalanceReport, generateAdvancedReportPdf, generateStage7ReportPdf, generateCompleteAdvancedReportPdf } from '../utils/pdfGenerator';
+import { generateMassBalanceReport, generateAdvancedReportPdf, generateStage7ReportPdf, generateStage8ReportPdf, generateCompleteAdvancedReportPdf } from '../utils/pdfGenerator';
 import { getCurrentPlan, getCurrentPlanSync } from '../utils/subscriptionUtils';
 import Navbar from './Navbar';
 import Button from 'react-bootstrap/Button';
@@ -3686,9 +3688,9 @@ const CreateDesignSystem = () => {
                     }}
                     onClick={() => {
                       try {
-                        // TODO: Replace with actual Stage 8 PDF generation when ready
-                        console.log('Stage 8 PDF generation - Placeholder');
-                        alert('Stage 8 PDF generation will be available when parameters are ready');
+                        const doc = generateStage8ReportPdf(formData, stage8Report);
+                        const fileName = `Stage8_Report_${formData.designSystemName || 'Design'}_${new Date().toISOString().split('T')[0]}.pdf`;
+                        doc.save(fileName);
                       } catch (error) {
                         console.error('Error generating Stage 8 PDF:', error);
                         alert('Error generating Stage 8 PDF. Please try again.');

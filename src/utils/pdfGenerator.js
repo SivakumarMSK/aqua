@@ -427,6 +427,11 @@ export const generateStage7ReportPdf = (formData, stage7Report) => {
   return generateAdvancedReportPdfWithStages(formData, null, null, stage7Report, null, ['stage7']);
 };
 
+// Advanced Report PDF Generator - Stage 8 Only
+export const generateStage8ReportPdf = (formData, stage8Report) => {
+  return generateAdvancedReportPdfWithStages(formData, null, null, null, stage8Report, ['stage8']);
+};
+
 // Advanced Report PDF Generator - All Available Stages
 export const generateCompleteAdvancedReportPdf = (formData, advancedReport, limitingFactor, stage7Report, stage8Report) => {
   const availableStages = ['stage6'];
@@ -815,22 +820,77 @@ export const generateAdvancedReportPdfWithStages = (formData, advancedReport, li
     const formatNum = (n, digits = 2) => 
       (typeof n === 'number' && isFinite(n)) ? n.toFixed(digits) : '-';
     
-    const s8 = stage8Report?.stage_8 || {};
+    // Stage 1 (Juvenile) Results
+    if (stage8Report.stage1) {
+      yPos = addSubsectionHeader(doc, 'Stage 1 (Juvenile) Results', yPos);
+      
+      const stage1Data = [
+        ['Parameter', 'Value'],
+        ['Limiting Flow Rate', formatNum(stage8Report.stage1.limitingFlowRateStage1)],
+        ['Q_l.s_Stage1', formatNum(stage8Report.stage1.Q_l_s_Stage1)],
+        ['Total Dynamic Head Pressure', formatNum(stage8Report.stage1.pump_Head_Stage1)],
+        ['Pump Efficiency', formatNum(stage8Report.stage1.n_Pump_Stage1)],
+        ['Motor Efficiency', formatNum(stage8Report.stage1.n_Motor_Stage1)],
+        ['Hydraulic Power', formatNum(stage8Report.stage1.pump_HydPower_Stage1)],
+        ['Required Shaft Power', formatNum(stage8Report.stage1.pump_PowerkW_Stage1)]
+      ];
+      
+      yPos = checkPageBreak(doc, yPos, 25);
+      autoTable(doc, {
+        ...tableConfig,
+        startY: yPos,
+        body: cleanTableData(stage1Data),
+      });
+      yPos = (doc.lastAutoTable?.finalY || yPos) + PDF_STYLES.SUBSECTION_SPACING;
+    }
     
-    const pumpData = [
-      ['Flow Rate (L/min)', formatNum(s8.pump_flow_rate)],
-      ['Head (m)', formatNum(s8.pump_head)],
-      ['Type', s8.pump_type || 'N/A'],
-      ['Power (kW)', formatNum(s8.power_requirement)]
-    ];
+    // Stage 2 (Fingerling) Results
+    if (stage8Report.stage2) {
+      yPos = addSubsectionHeader(doc, 'Stage 2 (Fingerling) Results', yPos);
+      
+      const stage2Data = [
+        ['Parameter', 'Value'],
+        ['Limiting Flow Rate', formatNum(stage8Report.stage2.limitingFlowRateStage2)],
+        ['Q_l.s_Stage2', formatNum(stage8Report.stage2.Q_l_s_Stage2)],
+        ['Total Dynamic Head Pressure', formatNum(stage8Report.stage2.pump_Head_Stage2)],
+        ['Pump Efficiency', formatNum(stage8Report.stage2.n_Pump_Stage2)],
+        ['Motor Efficiency', formatNum(stage8Report.stage2.n_Motor_Stage2)],
+        ['Hydraulic Power', formatNum(stage8Report.stage2.pump_HydPower_Stage2)],
+        ['Required Shaft Power', formatNum(stage8Report.stage2.pump_PowerkW_Stage2)]
+      ];
+      
+      yPos = checkPageBreak(doc, yPos, 25);
+      autoTable(doc, {
+        ...tableConfig,
+        startY: yPos,
+        body: cleanTableData(stage2Data),
+      });
+      yPos = (doc.lastAutoTable?.finalY || yPos) + PDF_STYLES.SUBSECTION_SPACING;
+    }
     
-    yPos = checkPageBreak(doc, yPos, 20);
-    autoTable(doc, {
-      ...tableConfig,
-      startY: yPos,
-      body: cleanTableData(pumpData),
-    });
-    yPos = (doc.lastAutoTable?.finalY || yPos) + PDF_STYLES.SUBSECTION_SPACING;
+    // Stage 3 (Growout) Results
+    if (stage8Report.stage3) {
+      yPos = addSubsectionHeader(doc, 'Stage 3 (Growout) Results', yPos);
+      
+      const stage3Data = [
+        ['Parameter', 'Value'],
+        ['Limiting Flow Rate', formatNum(stage8Report.stage3.limitingFlowRateStage3)],
+        ['Q_l.s_Stage3', formatNum(stage8Report.stage3.Q_l_s_Stage3)],
+        ['Total Dynamic Head Pressure', formatNum(stage8Report.stage3.pump_Head_Stage3)],
+        ['Pump Efficiency', formatNum(stage8Report.stage3.n_Pump_Stage3)],
+        ['Motor Efficiency', formatNum(stage8Report.stage3.n_Motor_Stage3)],
+        ['Hydraulic Power', formatNum(stage8Report.stage3.pump_HydPower_Stage3)],
+        ['Required Shaft Power', formatNum(stage8Report.stage3.pump_PowerkW_Stage3)]
+      ];
+      
+      yPos = checkPageBreak(doc, yPos, 25);
+      autoTable(doc, {
+        ...tableConfig,
+        startY: yPos,
+        body: cleanTableData(stage3Data),
+      });
+      yPos = (doc.lastAutoTable?.finalY || yPos) + PDF_STYLES.SUBSECTION_SPACING;
+    }
   }
   
   // Footer is now added automatically to all pages via didDrawPage function
