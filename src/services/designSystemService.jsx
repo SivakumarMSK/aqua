@@ -144,6 +144,95 @@ export const getAllDesignSystems = async (onCachedData) => {
   }
 };
 
+export const getProjectsByDesignId = async (designId) => {
+  try {
+    const token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
+    
+    if (!token) {
+      console.warn('No auth token found');
+      return { design_id: 0, design_name: '', projects: [], status: 'error' };
+    }
+
+    let controller;
+    let timeoutId;
+
+    try {
+      controller = new AbortController();
+      timeoutId = setTimeout(() => controller.abort(), 8000);
+
+      const response = await fetch(`${API_URL}/designs/${designId}/projects`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Accept': 'application/json'
+        },
+        signal: controller.signal
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch projects for design ${designId}: ${response.status}`);
+      }
+
+      const data = await response.json();
+      console.log('Projects by design ID API response:', data);
+
+      return data;
+    } catch (error) {
+      console.error('Error fetching projects by design ID:', error);
+      return { design_id: 0, design_name: '', projects: [], status: 'error' };
+    } finally {
+      if (timeoutId) clearTimeout(timeoutId);
+      if (controller) controller.abort();
+    }
+  } catch (error) {
+    console.error('Error in getProjectsByDesignId:', error);
+    return { design_id: 0, design_name: '', projects: [], status: 'error' };
+  }
+};
+
+export const deleteDesign = async (designId) => {
+  try {
+    const token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
+    if (!token) {
+      throw new Error('Authentication token not found');
+    }
+
+    const response = await fetch(`${API_URL}/designs/${designId}`, {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Accept': 'application/json'
+      }
+    });
+
+    let responseData;
+    try {
+      responseData = await response.json();
+    } catch (e) {
+      if (!response.ok) {
+        throw new Error(`Failed to delete design: ${response.status} ${response.statusText}`);
+      }
+      throw e;
+    }
+
+    if (!response.ok) {
+      switch (response.status) {
+        case 404:
+          throw new Error(responseData.error || 'Design not found or does not belong to user');
+        case 500:
+          throw new Error(responseData.error || 'Internal server error');
+        default:
+          throw new Error(responseData.error || `Failed to delete design: ${response.status}`);
+      }
+    }
+
+    return responseData;
+  } catch (error) {
+    console.error('Error deleting design:', error);
+    throw error;
+  }
+};
+
 export const createDesignSystem = async (designData) => {
   try {
     // Get authentication token

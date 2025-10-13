@@ -4,6 +4,75 @@
     padding-top: 60px;
 }
 
+/* SweetAlert2 Custom Styling */
+.swal2-popup-custom {
+  border-radius: 12px !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2) !important;
+  border: 1px solid #e9ecef !important;
+}
+
+.swal2-title-custom {
+  color: #2c3e50 !important;
+  font-weight: 600 !important;
+  font-size: 1.5rem !important;
+}
+
+.swal2-content-custom {
+  color: #6c757d !important;
+  font-size: 1rem !important;
+  line-height: 1.5 !important;
+}
+
+.swal2-confirm-custom {
+  background-color: #dc3545 !important;
+  border: none !important;
+  border-radius: 8px !important;
+  padding: 10px 20px !important;
+  font-weight: 500 !important;
+  font-size: 0.9rem !important;
+  transition: all 0.3s ease !important;
+}
+
+.swal2-confirm-custom:hover {
+  background-color: #c82333 !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 4px 12px rgba(220, 53, 69, 0.3) !important;
+}
+
+.swal2-cancel-custom {
+  background-color: #6c757d !important;
+  border: none !important;
+  border-radius: 8px !important;
+  padding: 10px 20px !important;
+  font-weight: 500 !important;
+  font-size: 0.9rem !important;
+  transition: all 0.3s ease !important;
+}
+
+.swal2-cancel-custom:hover {
+  background-color: #5a6268 !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 4px 12px rgba(108, 117, 125, 0.3) !important;
+}
+
+/* Success alert styling */
+.swal2-success .swal2-success-ring {
+  border-color: #28a745 !important;
+}
+
+.swal2-success [class^=swal2-success-line] {
+  background-color: #28a745 !important;
+}
+
+/* Error alert styling */
+.swal2-error [class^=swal2-x-mark-line] {
+  background-color: #dc3545 !important;
+}
+
+.swal2-error .swal2-x-mark {
+  border-color: #dc3545 !important;
+}
+
 .report-content {
     padding: 30px;
     max-width: 1200px;

@@ -4,9 +4,15 @@ import Card from 'react-bootstrap/Card';
 import Button from 'react-bootstrap/Button';
 import Form from 'react-bootstrap/Form';
 import InputGroup from 'react-bootstrap/InputGroup';
+import Dropdown from 'react-bootstrap/Dropdown';
 import { getAllDesignSystems } from '../services/designSystemService.jsx';
+import { deleteProject } from '../services/projectService.jsx';
 import { useNavigate } from 'react-router-dom';
-import { generateMassBalanceCardsPdf, generateAdvancedReportPdf } from '../utils/pdfGenerator';
+import { generateMassBalanceCardsPdf, generateAdvancedReportPdf, generateStage7ReportPdf, generateCompleteAdvancedReportPdf } from '../utils/pdfGenerator';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
+import Toast from '../components/Toast';
+import Swal from 'sweetalert2';
 import './Reports.css';
 
 const Reports = () => {
@@ -21,6 +27,10 @@ const Reports = () => {
   const [sort, setSort] = useState('created_desc');
   const [page, setPage] = useState(1);
   const [reportType, setReportType] = useState('basic'); // 'basic', 'advanced'
+  const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
+  const [deletingProjectId, setDeletingProjectId] = useState(null);
+  const [stageAvailability, setStageAvailability] = useState({});
+  const [downloadingProjectId, setDownloadingProjectId] = useState(null);
   const pageSize = 6;
 
   useEffect(() => {
@@ -210,12 +220,12 @@ const Reports = () => {
     });
   };
 
-  // Handle advanced report - use step6results and limiting factor APIs
+  // Handle advanced report - use step6results, limiting factor, stage7, and stage8 APIs
   const handleAdvancedReport = async (report) => {
     const token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
     
-    // Call both advanced APIs
-    const [step6Response, limitingFactorResponse] = await Promise.all([
+    // Call all advanced APIs simultaneously
+    const [step6Response, limitingFactorResponse, stage7Response, stage8Response] = await Promise.all([
       fetch(`/backend/advanced/formulas/api/projects/${report.id}/step_6_results`, {
         method: 'GET',
         headers: {
@@ -229,9 +239,24 @@ const Reports = () => {
           'Authorization': `Bearer ${token}`,
           'Accept': 'application/json'
         }
+      }),
+      fetch(`/backend/advanced/formulas/api/projects/${report.id}/step7`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Accept': 'application/json'
+        }
+      }),
+      fetch(`/backend/advanced/formulas/api/projects/${report.id}/step8`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Accept': 'application/json'
+        }
       })
     ]);
 
+    // Handle Stage 6 and Limiting Factor (required)
     if (!step6Response.ok) {
       throw new Error(`Failed to fetch step6 results: ${step6Response.status}`);
     }
@@ -242,10 +267,24 @@ const Reports = () => {
     const step6Data = await step6Response.json();
     const limitingFactorData = await limitingFactorResponse.json();
     
+    // Handle Stage 7 and Stage 8 (optional - may not exist for all projects)
+    let stage7Data = null;
+    let stage8Data = null;
+    
+    if (stage7Response.ok) {
+      stage7Data = await stage7Response.json();
+    }
+    
+    if (stage8Response.ok) {
+      stage8Data = await stage8Response.json();
+    }
+    
     // Map API response to our expected format
     const outputs = {
       step6Results: step6Data,
       limitingFactor: limitingFactorData,
+      stage7Results: stage7Data,
+      stage8Results: stage8Data,
     };
 
     // Create dummy inputs for the report
@@ -417,8 +456,542 @@ const Reports = () => {
     doc.save(fileName);
   };
 
+  // Check stage availability for advanced projects
+  const checkStageAvailability = async (projectId) => {
+    const token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
+    
+    const [stage7Response, stage8Response] = await Promise.all([
+      fetch(`/backend/advanced/formulas/api/projects/${projectId}/step7`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Accept': 'application/json'
+        }
+      }),
+      fetch(`/backend/advanced/formulas/api/projects/${projectId}/step8`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Accept': 'application/json'
+        }
+      })
+    ]);
+    
+    return {
+      hasStage7: stage7Response.ok,
+      hasStage8: stage8Response.ok
+    };
+  };
+
+  // Handle dropdown positioning for fixed dropdowns
+  const handleDropdownToggle = async (isOpen, report) => {
+    if (isOpen && !stageAvailability[report.id]) {
+      try {
+        const availability = await checkStageAvailability(report.id);
+        setStageAvailability(prev => ({
+          ...prev,
+          [report.id]: availability
+        }));
+      } catch (error) {
+        console.error('Error checking stage availability:', error);
+        setStageAvailability(prev => ({
+          ...prev,
+          [report.id]: { hasStage7: false, hasStage8: false }
+        }));
+      }
+    }
+    
+    // Add/remove class to card when dropdown is open/closed
+    setTimeout(() => {
+      const cardElement = document.querySelector(`[data-report-id="${report.id}"]`);
+      if (cardElement) {
+        if (isOpen) {
+          cardElement.classList.add('dropdown-open');
+        } else {
+          cardElement.classList.remove('dropdown-open');
+        }
+      }
+    }, 10);
+  };
+
+  // Download Stage 6 report only
+  const downloadStage6Report = async (report) => {
+    try {
+      setDownloadingProjectId(report.id);
+      
+      const token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
+      
+      // Call Stage 6 APIs
+      const [step6Response, limitingFactorResponse] = await Promise.all([
+        fetch(`/backend/advanced/formulas/api/projects/${report.id}/step_6_results`, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Accept': 'application/json'
+          }
+        }),
+        fetch(`/backend/advanced/formulas/api/projects/${report.id}/limiting_factor`, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Accept': 'application/json'
+          }
+        })
+      ]);
+
+      if (!step6Response.ok) {
+        throw new Error(`Failed to fetch step6 results: ${step6Response.status}`);
+      }
+      if (!limitingFactorResponse.ok) {
+        throw new Error(`Failed to fetch limiting factor: ${limitingFactorResponse.status}`);
+      }
+
+      const step6Data = await step6Response.json();
+      const limitingFactorData = await limitingFactorResponse.json();
+      
+      // Create form data for report
+      const formData = {
+        designSystemName: report.designSystemName || report.name || 'Advanced Design',
+        targetSpecies: report.species || 'Tilapia',
+      };
+      
+      // Generate Stage 6 report PDF
+      const doc = generateAdvancedReportPdf(formData, step6Data, limitingFactorData);
+      const name = (report.projectName || report.name || 'advanced-report').toLowerCase().replace(/[^a-z0-9]+/g, '-');
+      const fileName = `Stage6_Report_${name}_${new Date().toISOString().split('T')[0]}.pdf`;
+      doc.save(fileName);
+      
+    } catch (error) {
+      console.error('Error downloading Stage 6 report:', error);
+      setToast({
+        show: true,
+        message: `Failed to download Stage 6 report: ${error.message}`,
+        type: 'error'
+      });
+    } finally {
+      setDownloadingProjectId(null);
+    }
+  };
+
+  // Download Stage 7 report only
+  const downloadStage7Report = async (report) => {
+    try {
+      setDownloadingProjectId(report.id);
+      
+      const token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
+      
+      // Call Stage 7 API
+      const stage7Response = await fetch(`/backend/advanced/formulas/api/projects/${report.id}/step7`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Accept': 'application/json'
+        }
+      });
+
+      if (!stage7Response.ok) {
+        throw new Error(`Failed to fetch stage7 results: ${stage7Response.status}`);
+      }
+
+      const stage7Data = await stage7Response.json();
+      
+      // Create form data for report
+      const formData = {
+        designSystemName: report.designSystemName || report.name || 'Advanced Design',
+        targetSpecies: report.species || 'Tilapia',
+      };
+      
+      // Generate Stage 7 report PDF
+      const doc = generateStage7ReportPdf(formData, stage7Data);
+      const name = (report.projectName || report.name || 'advanced-report').toLowerCase().replace(/[^a-z0-9]+/g, '-');
+      const fileName = `Stage7_Report_${name}_${new Date().toISOString().split('T')[0]}.pdf`;
+      doc.save(fileName);
+      
+    } catch (error) {
+      console.error('Error downloading Stage 7 report:', error);
+      setToast({
+        show: true,
+        message: `Failed to download Stage 7 report: ${error.message}`,
+        type: 'error'
+      });
+    } finally {
+      setDownloadingProjectId(null);
+    }
+  };
+
+  // Download Stage 8 report only
+  const downloadStage8Report = async (report) => {
+    try {
+      setDownloadingProjectId(report.id);
+      
+      const token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
+      
+      // Call Stage 8 API
+      const stage8Response = await fetch(`/backend/advanced/formulas/api/projects/${report.id}/step8`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Accept': 'application/json'
+        }
+      });
+
+      if (!stage8Response.ok) {
+        throw new Error(`Failed to fetch stage8 results: ${stage8Response.status}`);
+      }
+
+      const stage8Data = await stage8Response.json();
+      
+      // Create form data for report
+      const formData = {
+        designSystemName: report.designSystemName || report.name || 'Advanced Design',
+        targetSpecies: report.species || 'Tilapia',
+      };
+      
+      // Create a custom Stage 8 PDF with all the detailed data
+      const doc = new jsPDF();
+      let yPos = 20;
+      
+      // Add title
+      doc.setFontSize(18);
+      doc.setTextColor(0, 89, 255);
+      doc.text('Stage 8: Basic Pump Size Report', 20, yPos);
+      yPos += 15;
+      
+      // Add timestamp
+      doc.setFontSize(10);
+      doc.setTextColor(128, 128, 128);
+      doc.text(`Generated on ${new Date().toLocaleString()}`, 20, yPos);
+      yPos += 20;
+      
+      // Add project info
+      doc.setFontSize(12);
+      doc.setTextColor(0, 0, 0);
+      doc.text(`Project: ${formData.designSystemName}`, 20, yPos);
+      yPos += 8;
+      doc.text(`Species: ${formData.targetSpecies}`, 20, yPos);
+      yPos += 15;
+      
+      // Helper function to format numbers
+      const formatNum = (n, digits = 2) => 
+        (typeof n === 'number' && isFinite(n)) ? n.toFixed(digits) : '-';
+      
+      // Stage 1 Data
+      if (stage8Data.stage1) {
+        doc.setFontSize(14);
+        doc.setTextColor(0, 89, 255);
+        doc.text('Stage 1 (Juvenile)', 20, yPos);
+        yPos += 10;
+        
+        const stage1Data = [
+          ['Parameter', 'Value'],
+          ['Limiting Flow Rate', formatNum(stage8Data.stage1.limitingFlowRateStage1)],
+          ['Q_l.s_Stage1', formatNum(stage8Data.stage1.Q_l_s_Stage1)],
+          ['Total Dynamic Head Pressure', formatNum(stage8Data.stage1.pump_Head_Stage1)],
+          ['Pump Efficiency', formatNum(stage8Data.stage1.n_Pump_Stage1)],
+          ['Motor Efficiency', formatNum(stage8Data.stage1.n_Motor_Stage1)],
+          ['Hydraulic Power', formatNum(stage8Data.stage1.pump_HydPower_Stage1)],
+          ['Required Shaft Power', formatNum(stage8Data.stage1.pump_PowerkW_Stage1)]
+        ];
+        
+        autoTable(doc, {
+          startY: yPos,
+          head: [stage1Data[0]],
+          body: stage1Data.slice(1),
+          theme: 'grid',
+          headStyles: { fillColor: [0, 89, 255], textColor: [255, 255, 255] },
+          margin: { left: 20 }
+        });
+        yPos = doc.lastAutoTable.finalY + 15;
+      }
+      
+      // Stage 2 Data
+      if (stage8Data.stage2) {
+        doc.setFontSize(14);
+        doc.setTextColor(0, 89, 255);
+        doc.text('Stage 2 (Fingerling)', 20, yPos);
+        yPos += 10;
+        
+        const stage2Data = [
+          ['Parameter', 'Value'],
+          ['Limiting Flow Rate', formatNum(stage8Data.stage2.limitingFlowRateStage2)],
+          ['Q_l.s_Stage2', formatNum(stage8Data.stage2.Q_l_s_Stage2)],
+          ['Total Dynamic Head Pressure', formatNum(stage8Data.stage2.pump_Head_Stage2)],
+          ['Pump Efficiency', formatNum(stage8Data.stage2.n_Pump_Stage2)],
+          ['Motor Efficiency', formatNum(stage8Data.stage2.n_Motor_Stage2)],
+          ['Hydraulic Power', formatNum(stage8Data.stage2.pump_HydPower_Stage2)],
+          ['Required Shaft Power', formatNum(stage8Data.stage2.pump_PowerkW_Stage2)]
+        ];
+        
+        autoTable(doc, {
+          startY: yPos,
+          head: [stage2Data[0]],
+          body: stage2Data.slice(1),
+          theme: 'grid',
+          headStyles: { fillColor: [0, 89, 255], textColor: [255, 255, 255] },
+          margin: { left: 20 }
+        });
+        yPos = doc.lastAutoTable.finalY + 15;
+      }
+      
+      // Stage 3 Data
+      if (stage8Data.stage3) {
+        doc.setFontSize(14);
+        doc.setTextColor(0, 89, 255);
+        doc.text('Stage 3 (Growout)', 20, yPos);
+        yPos += 10;
+        
+        const stage3Data = [
+          ['Parameter', 'Value'],
+          ['Limiting Flow Rate', formatNum(stage8Data.stage3.limitingFlowRateStage3)],
+          ['Q_l.s_Stage3', formatNum(stage8Data.stage3.Q_l_s_Stage3)],
+          ['Total Dynamic Head Pressure', formatNum(stage8Data.stage3.pump_Head_Stage3)],
+          ['Pump Efficiency', formatNum(stage8Data.stage3.n_Pump_Stage3)],
+          ['Motor Efficiency', formatNum(stage8Data.stage3.n_Motor_Stage3)],
+          ['Hydraulic Power', formatNum(stage8Data.stage3.pump_HydPower_Stage3)],
+          ['Required Shaft Power', formatNum(stage8Data.stage3.pump_PowerkW_Stage3)]
+        ];
+        
+        autoTable(doc, {
+          startY: yPos,
+          head: [stage3Data[0]],
+          body: stage3Data.slice(1),
+          theme: 'grid',
+          headStyles: { fillColor: [0, 89, 255], textColor: [255, 255, 255] },
+          margin: { left: 20 }
+        });
+      }
+      
+      const name = (report.projectName || report.name || 'advanced-report').toLowerCase().replace(/[^a-z0-9]+/g, '-');
+      const fileName = `Stage8_Report_${name}_${new Date().toISOString().split('T')[0]}.pdf`;
+      doc.save(fileName);
+      
+    } catch (error) {
+      console.error('Error downloading Stage 8 report:', error);
+      setToast({
+        show: true,
+        message: `Failed to download Stage 8 report: ${error.message}`,
+        type: 'error'
+      });
+    } finally {
+      setDownloadingProjectId(null);
+    }
+  };
+
+  // Download Complete report (all available stages)
+  const downloadCompleteReport = async (report) => {
+    try {
+      setDownloadingProjectId(report.id);
+      
+      const token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
+      
+      // Call all APIs
+      const [step6Response, limitingFactorResponse, stage7Response, stage8Response] = await Promise.all([
+        fetch(`/backend/advanced/formulas/api/projects/${report.id}/step_6_results`, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Accept': 'application/json'
+          }
+        }),
+        fetch(`/backend/advanced/formulas/api/projects/${report.id}/limiting_factor`, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Accept': 'application/json'
+          }
+        }),
+        fetch(`/backend/advanced/formulas/api/projects/${report.id}/step7`, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Accept': 'application/json'
+          }
+        }),
+        fetch(`/backend/advanced/formulas/api/projects/${report.id}/step8`, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Accept': 'application/json'
+          }
+        })
+      ]);
+
+      // Handle Stage 6 and Limiting Factor (required)
+      if (!step6Response.ok) {
+        throw new Error(`Failed to fetch step6 results: ${step6Response.status}`);
+      }
+      if (!limitingFactorResponse.ok) {
+        throw new Error(`Failed to fetch limiting factor: ${limitingFactorResponse.status}`);
+      }
+
+      const step6Data = await step6Response.json();
+      const limitingFactorData = await limitingFactorResponse.json();
+      
+      // Handle Stage 7 and Stage 8 (optional)
+      let stage7Data = null;
+      let stage8Data = null;
+      
+      if (stage7Response.ok) {
+        stage7Data = await stage7Response.json();
+      }
+      
+      if (stage8Response.ok) {
+        stage8Data = await stage8Response.json();
+      }
+      
+      // Create form data for report
+      const formData = {
+        designSystemName: report.designSystemName || report.name || 'Advanced Design',
+        targetSpecies: report.species || 'Tilapia',
+      };
+      
+      // Generate complete report PDF
+      const doc = generateCompleteAdvancedReportPdf(formData, step6Data, limitingFactorData, stage7Data, stage8Data);
+      const name = (report.projectName || report.name || 'advanced-report').toLowerCase().replace(/[^a-z0-9]+/g, '-');
+      const fileName = `Complete_Report_${name}_${new Date().toISOString().split('T')[0]}.pdf`;
+      doc.save(fileName);
+      
+    } catch (error) {
+      console.error('Error downloading complete report:', error);
+      setToast({
+        show: true,
+        message: `Failed to download complete report: ${error.message}`,
+        type: 'error'
+      });
+    } finally {
+      setDownloadingProjectId(null);
+    }
+  };
+
+  const handleDeleteProject = async (report) => {
+    // Show beautiful confirmation dialog
+    const result = await Swal.fire({
+      title: 'Are you sure?',
+      text: `You are about to delete "${report.projectName || report.name}". This action cannot be undone!`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#d33',
+      cancelButtonColor: '#3085d6',
+      confirmButtonText: 'Yes, delete it!',
+      cancelButtonText: 'Cancel',
+      reverseButtons: true,
+      customClass: {
+        popup: 'swal2-popup-custom',
+        title: 'swal2-title-custom',
+        content: 'swal2-content-custom',
+        confirmButton: 'swal2-confirm-custom',
+        cancelButton: 'swal2-cancel-custom'
+      }
+    });
+    
+    if (!result.isConfirmed) {
+      return;
+    }
+
+    try {
+      setDeletingProjectId(report.id);
+      
+      // Call the delete API
+      await deleteProject(report.id);
+      
+      // Remove the project from the local state
+      setReports(prevReports => 
+        prevReports.filter(r => r.id !== report.id)
+      );
+      
+      // Show success alert
+      await Swal.fire({
+        title: 'Deleted!',
+        text: `"${report.projectName || report.name}" has been deleted successfully.`,
+        icon: 'success',
+        confirmButtonColor: '#28a745',
+        timer: 2000,
+        timerProgressBar: true,
+        showConfirmButton: false
+      });
+      
+    } catch (error) {
+      console.error('Error deleting project:', error);
+      
+      // Show error alert
+      await Swal.fire({
+        title: 'Error!',
+        text: `Failed to delete project: ${error.message}`,
+        icon: 'error',
+        confirmButtonColor: '#dc3545'
+      });
+    } finally {
+      setDeletingProjectId(null);
+    }
+  };
+
+  // Render download dropdown for advanced projects
+  const renderDownloadDropdown = (report) => {
+    const projectType = classifyProject(report);
+    
+    if (projectType === 'basic') {
+      // For basic projects, keep the simple download button
+      return (
+        <Button 
+          variant="light" 
+          size="sm" 
+          onClick={() => handleDownloadReport(report)} 
+          title="Download"
+          disabled={downloadingProjectId === report.id}
+        >
+          {downloadingProjectId === report.id ? (
+            <i className="bi bi-hourglass-split"></i>
+          ) : (
+            <i className="bi bi-download"></i>
+          )}
+        </Button>
+      );
+    }
+
+    // For advanced projects, show dropdown
+    return (
+      <Dropdown onToggle={(isOpen) => handleDropdownToggle(isOpen, report)}>
+        <Dropdown.Toggle 
+          variant="light" 
+          size="sm" 
+          disabled={downloadingProjectId === report.id}
+          title="Download Reports"
+        >
+          {downloadingProjectId === report.id ? (
+            <i className="bi bi-hourglass-split"></i>
+          ) : (
+            <i className="bi bi-download"></i>
+          )}
+        </Dropdown.Toggle>
+        <Dropdown.Menu>
+          <Dropdown.Item onClick={() => downloadStage6Report(report)}>
+            <i className="bi bi-calculator me-2"></i>Stage 6 Report
+          </Dropdown.Item>
+          {stageAvailability[report.id]?.hasStage7 && (
+            <Dropdown.Item onClick={() => downloadStage7Report(report)}>
+              <i className="bi bi-gear me-2"></i>Stage 7 Report
+            </Dropdown.Item>
+          )}
+          {stageAvailability[report.id]?.hasStage7 && stageAvailability[report.id]?.hasStage8 && (
+            <Dropdown.Item onClick={() => downloadStage8Report(report)}>
+              <i className="bi bi-lightning me-2"></i>Stage 8 Report
+            </Dropdown.Item>
+          )}
+          {stageAvailability[report.id]?.hasStage7 && (
+            <Dropdown.Divider />
+          )}
+          {stageAvailability[report.id]?.hasStage7 && (
+            <Dropdown.Item onClick={() => downloadCompleteReport(report)}>
+              <i className="bi bi-grid-3x3-gap-fill me-2"></i>Complete Report
+            </Dropdown.Item>
+          )}
+        </Dropdown.Menu>
+      </Dropdown>
+    );
+  };
+
   const renderReportCard = (report) => (
-    <Card key={report.id} className="item-card">
+    <Card key={report.id} className="item-card" data-report-id={report.id}>
       <Card.Body>
         <div className="card-top">
           <h5 className="mb-1">{report.projectName || report.name}</h5>
@@ -432,11 +1005,22 @@ const Reports = () => {
           <Button variant="light" size="sm" onClick={() => handleViewReport(report)} title="View">
             <i className="bi bi-eye"></i>
           </Button>
-          <Button variant="light" size="sm" onClick={() => handleDownloadReport(report)} title="Download">
-            <i className="bi bi-download"></i>
-          </Button>
+          {renderDownloadDropdown(report)}
           <Button variant="light" size="sm" onClick={() => window.alert('Share link copied')} title="Share">
             <i className="bi bi-share"></i>
+          </Button>
+          <Button 
+            variant="outline-danger" 
+            size="sm" 
+            onClick={() => handleDeleteProject(report)} 
+            title="Delete Project"
+            disabled={deletingProjectId === report.id}
+          >
+            {deletingProjectId === report.id ? (
+              <i className="bi bi-hourglass-split"></i>
+            ) : (
+              <i className="bi bi-trash"></i>
+            )}
           </Button>
         </div>
       </Card.Body>
@@ -444,61 +1028,70 @@ const Reports = () => {
   );
 
   return (
-    <ListLayout
-      title="Reports"
-      items={visible}
-      renderItem={renderReportCard}
-      renderControls={() => (
-        <>
-          {/* Report Type Filter Buttons */}
-          <div className="report-type-buttons d-flex gap-2 mb-3">
-            <button
-              onClick={() => { setPage(1); setReportType('basic'); }}
-              className={`report-filter-btn ${reportType === 'basic' ? 'active' : 'inactive'}`}
-            >
-              Basic Reports
-            </button>
-            <button
-              onClick={() => { setPage(1); setReportType('advanced'); }}
-              className={`report-filter-btn ${reportType === 'advanced' ? 'active' : 'inactive'}`}
-            >
-              Advanced Reports
-            </button>
-          </div>
-          
-          <InputGroup className="search-bar">
-            <Form.Control
-              placeholder="Search reports..."
-              value={query}
-              onChange={e => { setPage(1); setQuery(e.target.value); }}
-            />
-          </InputGroup>
-          <div className="filter-sort-group d-flex gap-2">
-            <Form.Select className="filter-select" value={species} onChange={e => { setPage(1); setSpecies(e.target.value); }}>
-              <option value="ALL">Species: All</option>
-              {speciesOptions.map(s => (
-                <option key={s} value={s}>{s}</option>
-              ))}
-            </Form.Select>
-            <Form.Control type="date" value={dateFrom} onChange={e => { setPage(1); setDateFrom(e.target.value); }} />
-            <Form.Control type="date" value={dateTo} onChange={e => { setPage(1); setDateTo(e.target.value); }} />
-            <Form.Select className="sort-select" value={sort} onChange={e => setSort(e.target.value)}>
-              <option value="created_desc">Newest</option>
-              <option value="created_asc">Oldest</option>
-              <option value="name_asc">Name A-Z</option>
-              <option value="name_desc">Name Z-A</option>
-            </Form.Select>
-          </div>
-        </>
+    <>
+      {toast.show && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast({ ...toast, show: false })}
+        />
       )}
-      pagination={{
-        page: currentPage,
-        totalPages,
-        onPrev: () => setPage(p => Math.max(1, p - 1)),
-        onNext: () => setPage(p => Math.min(totalPages, p + 1)),
-        totalLabel: loading ? 'Loading…' : error ? error : `${filteredSorted.length} result${filteredSorted.length === 1 ? '' : 's'}`
-      }}
-    />
+      <ListLayout
+        title="Reports"
+        items={visible}
+        renderItem={renderReportCard}
+        renderControls={() => (
+          <>
+            {/* Report Type Filter Buttons */}
+            <div className="report-type-buttons d-flex gap-2 mb-3">
+              <button
+                onClick={() => { setPage(1); setReportType('basic'); }}
+                className={`report-filter-btn ${reportType === 'basic' ? 'active' : 'inactive'}`}
+              >
+                Basic Reports
+              </button>
+              <button
+                onClick={() => { setPage(1); setReportType('advanced'); }}
+                className={`report-filter-btn ${reportType === 'advanced' ? 'active' : 'inactive'}`}
+              >
+                Advanced Reports
+              </button>
+            </div>
+            
+            <InputGroup className="search-bar">
+              <Form.Control
+                placeholder="Search reports..."
+                value={query}
+                onChange={e => { setPage(1); setQuery(e.target.value); }}
+              />
+            </InputGroup>
+            <div className="filter-sort-group d-flex gap-2">
+              <Form.Select className="filter-select" value={species} onChange={e => { setPage(1); setSpecies(e.target.value); }}>
+                <option value="ALL">Species: All</option>
+                {speciesOptions.map(s => (
+                  <option key={s} value={s}>{s}</option>
+                ))}
+              </Form.Select>
+              <Form.Control type="date" value={dateFrom} onChange={e => { setPage(1); setDateFrom(e.target.value); }} />
+              <Form.Control type="date" value={dateTo} onChange={e => { setPage(1); setDateTo(e.target.value); }} />
+              <Form.Select className="sort-select" value={sort} onChange={e => setSort(e.target.value)}>
+                <option value="created_desc">Newest</option>
+                <option value="created_asc">Oldest</option>
+                <option value="name_asc">Name A-Z</option>
+                <option value="name_desc">Name Z-A</option>
+              </Form.Select>
+            </div>
+          </>
+        )}
+        pagination={{
+          page: currentPage,
+          totalPages,
+          onPrev: () => setPage(p => Math.max(1, p - 1)),
+          onNext: () => setPage(p => Math.min(totalPages, p + 1)),
+          totalLabel: loading ? 'Loading…' : error ? error : `${filteredSorted.length} result${filteredSorted.length === 1 ? '' : 's'}`
+        }}
+      />
+    </>
   );
 };
 

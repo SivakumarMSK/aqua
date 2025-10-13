@@ -417,15 +417,42 @@ export const generateMassBalanceCardsPdf = (formData, results) => {
   return doc;
 };
 
-// Advanced Report PDF Generator
+// Advanced Report PDF Generator - Stage 6 Only
 export const generateAdvancedReportPdf = (formData, advancedReport, limitingFactor) => {
+  return generateAdvancedReportPdfWithStages(formData, advancedReport, limitingFactor, null, null, ['stage6']);
+};
+
+// Advanced Report PDF Generator - Stage 7 Only
+export const generateStage7ReportPdf = (formData, stage7Report) => {
+  return generateAdvancedReportPdfWithStages(formData, null, null, stage7Report, null, ['stage7']);
+};
+
+// Advanced Report PDF Generator - All Available Stages
+export const generateCompleteAdvancedReportPdf = (formData, advancedReport, limitingFactor, stage7Report, stage8Report) => {
+  const availableStages = ['stage6'];
+  if (stage7Report) availableStages.push('stage7');
+  if (stage8Report) availableStages.push('stage8');
+  
+  return generateAdvancedReportPdfWithStages(formData, advancedReport, limitingFactor, stage7Report, stage8Report, availableStages);
+};
+
+// Main Advanced Report PDF Generator with Stage Selection
+export const generateAdvancedReportPdfWithStages = (formData, advancedReport, limitingFactor, stage7Report, stage8Report, stagesToInclude = ['stage6']) => {
   const doc = new jsPDF();
   let yPos = PDF_STYLES.MARGIN;
   const margin = PDF_STYLES.MARGIN;
   
-  // Add title
+  // Add title based on stages included
   setTextStyle(doc, PDF_STYLES.TITLE, PDF_STYLES.PRIMARY, true);
-  doc.text('Advanced Design System Report', margin, yPos);
+  let reportTitle = 'Advanced Design System Report';
+  if (stagesToInclude.length === 1) {
+    if (stagesToInclude.includes('stage6')) reportTitle = 'Stage 6 Report';
+    else if (stagesToInclude.includes('stage7')) reportTitle = 'Stage 7 Report';
+    else if (stagesToInclude.includes('stage8')) reportTitle = 'Stage 8 Report';
+  } else if (stagesToInclude.length > 1) {
+    reportTitle = 'Complete Advanced Design System Report';
+  }
+  doc.text(reportTitle, margin, yPos);
   yPos += PDF_STYLES.SECTION_SPACING;
   
   // Add timestamp
@@ -479,9 +506,9 @@ export const generateAdvancedReportPdf = (formData, advancedReport, limitingFact
     }
   };
   
-  // Advanced Report Results
-  if (advancedReport && advancedReport.step_6) {
-    yPos = addSectionHeader(doc, 'Advanced Calculation Results', yPos);
+  // Advanced Report Results - Stage 6
+  if (stagesToInclude.includes('stage6') && advancedReport && advancedReport.step_6) {
+    yPos = addSectionHeader(doc, 'Stage 6: Advanced Calculation Results', yPos);
     
     const s1 = advancedReport.step_6;
     const formatNum = (n, digits = 2) => 
@@ -621,6 +648,189 @@ export const generateAdvancedReportPdf = (formData, advancedReport, limitingFact
       });
       yPos = (doc.lastAutoTable?.finalY || yPos) + PDF_STYLES.SUBSECTION_SPACING;
     }
+  }
+  
+  // Stage 7 Report - Bio Filter & Sump Size
+  if (stagesToInclude.includes('stage7') && stage7Report) {
+    yPos = addSectionHeader(doc, 'Stage 7: Bio Filter & Sump Size', yPos);
+    
+    const formatNum = (n, digits = 2) => 
+      (typeof n === 'number' && isFinite(n)) ? n.toFixed(digits) : '-';
+    
+    // Bio Filter Parameters
+    yPos = addSubsectionHeader(doc, 'Bio Filter Parameters', yPos);
+    
+    const bioFilterData = [
+      ['VTR Used', formatNum(stage7Report.bioVTR_use)],
+      ['VTR Compensation', formatNum(stage7Report['bio.VTR_compensation'])],
+      ['Shape', stage7Report['bio.shape'] || 'N/A'],
+      ['Temperature Used', formatNum(stage7Report.temperature_used) + '°C'],
+      ['Temp Compensation Factor', formatNum(stage7Report.temp_compensation_factor)]
+    ];
+    
+    yPos = checkPageBreak(doc, yPos, 25);
+    autoTable(doc, {
+      ...tableConfig,
+      startY: yPos,
+      body: cleanTableData(bioFilterData),
+    });
+    yPos = (doc.lastAutoTable?.finalY || yPos) + PDF_STYLES.SUBSECTION_SPACING;
+    
+    // System Overview
+    yPos = addSubsectionHeader(doc, 'System Overview', yPos);
+    
+    const systemOverviewData = [
+      ['Project ID', stage7Report.project_id || 'N/A'],
+      ['Status', stage7Report.status || 'N/A'],
+      ['Biofilter Parameters Count', Object.keys(stage7Report.biofilter_parameters || {}).length + ' items']
+    ];
+    
+    yPos = checkPageBreak(doc, yPos, 20);
+    autoTable(doc, {
+      ...tableConfig,
+      startY: yPos,
+      body: cleanTableData(systemOverviewData),
+    });
+    yPos = (doc.lastAutoTable?.finalY || yPos) + PDF_STYLES.SUBSECTION_SPACING;
+    
+    // Stage 1 (Juvenile) Results
+    yPos = addSubsectionHeader(doc, 'Stage 1 (Juvenile) Results', yPos);
+
+    const stage1Data = [
+      // Daily TAN production
+      ['Daily TAN production rate (g/day)', formatNum(stage7Report.DailyTAN_gday_Stage1)],
+      ['Daily TAN — after passive nitrification (g/day)', formatNum(stage7Report.DailyTANpassive_gday_Stage1)],
+      // Design VTR
+      ['Design VTR', formatNum(stage7Report['design.VTR_Stage1'])],
+      // Media required
+      ['Media volume required (m³)', formatNum(stage7Report['biomedia.Required_Stage1'])],
+      // MBBR volume
+      ['MBBR volume (m³)', formatNum(stage7Report['MBBR.vol_Stage1'])],
+      // Round vessel
+      ['Round vessel — vessel diameter (m)', formatNum(stage7Report['MBBR.dia_Stage1'])],
+      ['Round vessel — vessel height (m)', formatNum(stage7Report['MBBR.high_Stage1'])],
+      // Rectangular vessel
+      ['Rectangular vessel — vessel height (m)', formatNum(stage7Report['MBBR.highRect_Stage1'])],
+      ['Rectangular vessel — vessel width (m)', formatNum(stage7Report['MBBR.wid_Stage1'])],
+      ['Rectangular vessel — vessel length (m)', formatNum(stage7Report['MBBR.len_Stage1'])],
+      // Aeration
+      ['Aeration — volume air required for mixing (x5 vol) (m³)', formatNum(stage7Report['MBBR.air_Stage1'])],
+      ['Aeration — volume air required (with 50% spare capacity) (m³)', formatNum(stage7Report['MBBR.air_Stage1_spare'])],
+      // Sump sizing
+      ['Sump sizing — 3 min full flow (m³)', formatNum(stage7Report['sump.Size_3min_Stage1'])],
+      ['Sump sizing — 5 min full flow (m³)', formatNum(stage7Report['sump.Size_5min_Stage1'])],
+      ['Sump sizing — sump total volume (m³)', formatNum(stage7Report['sump.totvol_Stage1'])],
+      ['Sump sizing — total system volume (m³)', formatNum(stage7Report['vol.TotalSyst_Stage1'])]
+    ];
+    
+    yPos = checkPageBreak(doc, yPos, 30);
+    autoTable(doc, {
+      ...tableConfig,
+      startY: yPos,
+      body: cleanTableData(stage1Data),
+    });
+    yPos = (doc.lastAutoTable?.finalY || yPos) + PDF_STYLES.SUBSECTION_SPACING;
+    
+    // Stage 2 (Fingerling) Results
+    yPos = addSubsectionHeader(doc, 'Stage 2 (Fingerling) Results', yPos);
+
+    const stage2Data = [
+      // Daily TAN production
+      ['Daily TAN production rate (g/day)', formatNum(stage7Report.DailyTAN_gday_Stage2)],
+      ['Daily TAN — after passive nitrification (g/day)', formatNum(stage7Report.DailyTANpassive_gday_Stage2)],
+      // Design VTR
+      ['Design VTR', formatNum(stage7Report['design.VTR_Stage2'])],
+      // Media required
+      ['Media volume required (m³)', formatNum(stage7Report['biomedia.Required_Stage2'])],
+      // MBBR volume
+      ['MBBR volume (m³)', formatNum(stage7Report['MBBR.vol_Stage2'])],
+      // Round vessel
+      ['Round vessel — vessel diameter (m)', formatNum(stage7Report['MBBR.dia_Stage2'])],
+      ['Round vessel — vessel height (m)', formatNum(stage7Report['MBBR.high_Stage2'])],
+      // Rectangular vessel
+      ['Rectangular vessel — vessel height (m)', formatNum(stage7Report['MBBR.highRect_Stage2'])],
+      ['Rectangular vessel — vessel width (m)', formatNum(stage7Report['MBBR.wid_Stage2'])],
+      ['Rectangular vessel — vessel length (m)', formatNum(stage7Report['MBBR.len_Stage2'])],
+      // Aeration
+      ['Aeration — volume air required for mixing (x5 vol) (m³)', formatNum(stage7Report['MBBR.air_Stage2'])],
+      ['Aeration — volume air required (with 50% spare capacity) (m³)', formatNum(stage7Report['MBBR.air_Stage2_spare'])],
+      // Sump sizing
+      ['Sump sizing — 3 min full flow (m³)', formatNum(stage7Report['sump.Size_3min_Stage2'])],
+      ['Sump sizing — 5 min full flow (m³)', formatNum(stage7Report['sump.Size_5min_Stage2'])],
+      ['Sump sizing — sump total volume (m³)', formatNum(stage7Report['sump.totvol_Stage2'])],
+      ['Sump sizing — total system volume (m³)', formatNum(stage7Report['vol.TotalSyst_Stage2'])]
+    ];
+    
+    yPos = checkPageBreak(doc, yPos, 30);
+    autoTable(doc, {
+      ...tableConfig,
+      startY: yPos,
+      body: cleanTableData(stage2Data),
+    });
+    yPos = (doc.lastAutoTable?.finalY || yPos) + PDF_STYLES.SUBSECTION_SPACING;
+    
+    // Stage 3 (Growout) Results
+    yPos = addSubsectionHeader(doc, 'Stage 3 (Growout) Results', yPos);
+
+    const stage3Data = [
+      // Daily TAN production
+      ['Daily TAN production rate (g/day)', formatNum(stage7Report.DailyTAN_gday_Stage3)],
+      ['Daily TAN — after passive nitrification (g/day)', formatNum(stage7Report.DailyTANpassive_gday_Stage3)],
+      // Design VTR
+      ['Design VTR', formatNum(stage7Report['design.VTR_Stage3'])],
+      // Media required
+      ['Media volume required (m³)', formatNum(stage7Report['biomedia.Required_Stage3'])],
+      // MBBR volume
+      ['MBBR volume (m³)', formatNum(stage7Report['MBBR.vol_Stage3'])],
+      // Round vessel
+      ['Round vessel — vessel diameter (m)', formatNum(stage7Report['MBBR.dia_Stage3'])],
+      ['Round vessel — vessel height (m)', formatNum(stage7Report['MBBR.high_Stage3'])],
+      // Rectangular vessel
+      ['Rectangular vessel — vessel height (m)', formatNum(stage7Report['MBBR.highRect_Stage3'])],
+      ['Rectangular vessel — vessel width (m)', formatNum(stage7Report['MBBR.wid_Stage3'])],
+      ['Rectangular vessel — vessel length (m)', formatNum(stage7Report['MBBR.len_Stage3'])],
+      // Aeration
+      ['Aeration — volume air required for mixing (x5 vol) (m³)', formatNum(stage7Report['MBBR.air_Stage3'])],
+      ['Aeration — volume air required (with 50% spare capacity) (m³)', formatNum(stage7Report['MBBR.air_Stage3_spare'])],
+      // Sump sizing
+      ['Sump sizing — 3 min full flow (m³)', formatNum(stage7Report['sump.Size_3min_Stage3'])],
+      ['Sump sizing — 5 min full flow (m³)', formatNum(stage7Report['sump.Size_5min_Stage3'])],
+      ['Sump sizing — sump total volume (m³)', formatNum(stage7Report['sump.totvol_Stage3'])],
+      ['Sump sizing — total system volume (m³)', formatNum(stage7Report['vol.TotalSyst_Stage3'])]
+    ];
+    
+    yPos = checkPageBreak(doc, yPos, 30);
+    autoTable(doc, {
+      ...tableConfig,
+      startY: yPos,
+      body: cleanTableData(stage3Data),
+    });
+    yPos = (doc.lastAutoTable?.finalY || yPos) + PDF_STYLES.SUBSECTION_SPACING;
+  }
+  
+  // Stage 8 Report - Basic Pump Size
+  if (stagesToInclude.includes('stage8') && stage8Report) {
+    yPos = addSectionHeader(doc, 'Stage 8: Basic Pump Size', yPos);
+    
+    const formatNum = (n, digits = 2) => 
+      (typeof n === 'number' && isFinite(n)) ? n.toFixed(digits) : '-';
+    
+    const s8 = stage8Report?.stage_8 || {};
+    
+    const pumpData = [
+      ['Flow Rate (L/min)', formatNum(s8.pump_flow_rate)],
+      ['Head (m)', formatNum(s8.pump_head)],
+      ['Type', s8.pump_type || 'N/A'],
+      ['Power (kW)', formatNum(s8.power_requirement)]
+    ];
+    
+    yPos = checkPageBreak(doc, yPos, 20);
+    autoTable(doc, {
+      ...tableConfig,
+      startY: yPos,
+      body: cleanTableData(pumpData),
+    });
+    yPos = (doc.lastAutoTable?.finalY || yPos) + PDF_STYLES.SUBSECTION_SPACING;
   }
   
   // Footer is now added automatically to all pages via didDrawPage function

@@ -4,6 +4,7 @@ import Button from 'react-bootstrap/Button';
 import Card from 'react-bootstrap/Card';
 import { useNavigate } from 'react-router-dom';
 import { getAllDesignSystems } from '../services/designSystemService.jsx';
+import { getAllProjects } from '../services/projectService';
 import { getProjectById, calculateMassBalance } from '../services/projectService';
 import { getCurrentPlan, getCurrentPlanSync, hasUserChosenPlan, hasActivePaidSubscriptionSync, markUserHasChosenPlan } from '../utils/subscriptionUtils';
 import Toast from './Toast';
@@ -118,6 +119,8 @@ const Dashboard = () => {
     const processDesigns = (designs) => {
       if (!mounted) return;
 
+      console.log('Raw designs from API:', designs);
+
       // Remove duplicates based on design_id and name/project combination
       const uniqueDesigns = designs.reduce((acc, current) => {
         const exists = acc.find(item => 
@@ -130,12 +133,17 @@ const Dashboard = () => {
         }
         return acc;
       }, []).sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
+      console.log('Unique designs after processing:', uniqueDesigns);
       
       // Extract unique projects and classify them
       const uniqueProjects = uniqueDesigns
         .filter(design => design.projects && design.projects.length > 0)
         .reduce((acc, design) => {
+          console.log('Processing design:', design.design_system_name, 'with projects:', design.projects);
+          console.log('Design type field:', design.type);
           const project = design.projects[0];
+          console.log('Project details:', project);
           const exists = acc.find(p => 
             p.id === project.id || 
             (p.name === project.name && p.species_names === project.species_names)
@@ -144,11 +152,14 @@ const Dashboard = () => {
             return [...acc, { 
               ...project, 
               design_system_name: design.design_system_name,
-              design_system: design // Store reference to design for classification
+              design_system: design, // Store reference to design for classification
+              type: design.type || project.type || 'basic' // Try design.type first, then project.type, default to 'basic'
             }];
           }
           return acc;
         }, []);
+
+      console.log('Extracted projects:', uniqueProjects);
 
       // Classify projects into basic and advanced
       const basicProjectsList = [];
@@ -156,12 +167,15 @@ const Dashboard = () => {
 
       uniqueProjects.forEach(project => {
         const projectType = classifyProject(project);
+        console.log(`Project ${project.name} - type field: ${project.type}, classified as: ${projectType}`);
         if (projectType === 'basic') {
           basicProjectsList.push(project);
         } else {
           advancedProjectsList.push(project);
         }
       });
+
+      console.log('Final classification - Basic projects:', basicProjectsList.length, 'Advanced projects:', advancedProjectsList.length);
 
       setDesignSystems(uniqueDesigns);
       setProjects(uniqueProjects);
@@ -170,12 +184,37 @@ const Dashboard = () => {
       setLoading(false);
     };
 
+    const processProjects = (projects) => {
+      if (!mounted) return;
+
+      console.log('Raw projects from API:', projects);
+
+      // Classify projects into basic and advanced using the type field
+      const basicProjectsList = [];
+      const advancedProjectsList = [];
+
+      projects.forEach(project => {
+        const projectType = classifyProject(project);
+        console.log(`Project ${project.name} - type field: ${project.type}, classified as: ${projectType}`);
+        if (projectType === 'basic') {
+          basicProjectsList.push(project);
+        } else {
+          advancedProjectsList.push(project);
+        }
+      });
+
+      console.log('Final classification - Basic projects:', basicProjectsList.length, 'Advanced projects:', advancedProjectsList.length);
+
+      setBasicProjects(basicProjectsList);
+      setAdvancedProjects(advancedProjectsList);
+    };
+
     const loadDesigns = async () => {
       try {
         setLoading(true);
         setError(null);
 
-        // Pass callback to handle cached data
+        // First load design systems for the design systems section
         const designs = await getAllDesignSystems((cachedData) => {
           if (cachedData.length > 0) {
             processDesigns(cachedData);
@@ -185,11 +224,18 @@ const Dashboard = () => {
         if (!mounted) return;
 
         processDesigns(designs);
+
+        // Then load projects for the projects section
+        const projects = await getAllProjects();
+        
+        if (!mounted) return;
+
+        processProjects(projects);
       } catch (err) {
         if (!mounted) return;
         clearTimeout(timeoutId);
         
-        console.error('Error fetching designs:', err);
+        console.error('Error fetching data:', err);
         setError(err.message);
         setToast({
           show: true,
@@ -350,31 +396,46 @@ const Dashboard = () => {
     }
   };
 
-  // Handle advanced project click - use step6results and limiting factor APIs
+  // Handle advanced project click - use step6results, limiting factor, stage7, and stage8 APIs
   const handleAdvancedProjectClick = async (project) => {
     try {
       setLoading(true);
       
       const token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
       
-            // Call both advanced APIs
-            const [step6Response, limitingFactorResponse] = await Promise.all([
-              fetch(`/backend/advanced/formulas/api/projects/${project.id}/step_6_results`, {
-                method: 'GET',
-                headers: {
-                  'Authorization': `Bearer ${token}`,
-                  'Accept': 'application/json'
-                }
-              }),
-              fetch(`/backend/advanced/formulas/api/projects/${project.id}/limiting_factor`, {
-                method: 'GET',
-                headers: {
-                  'Authorization': `Bearer ${token}`,
-                  'Accept': 'application/json'
-                }
-              })
-            ]);
+      // Call all advanced APIs simultaneously
+      const [step6Response, limitingFactorResponse, stage7Response, stage8Response] = await Promise.all([
+        fetch(`/backend/advanced/formulas/api/projects/${project.id}/step_6_results`, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Accept': 'application/json'
+          }
+        }),
+        fetch(`/backend/advanced/formulas/api/projects/${project.id}/limiting_factor`, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Accept': 'application/json'
+          }
+        }),
+        fetch(`/backend/advanced/formulas/api/projects/${project.id}/step7`, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Accept': 'application/json'
+          }
+        }),
+        fetch(`/backend/advanced/formulas/api/projects/${project.id}/step8`, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Accept': 'application/json'
+          }
+        })
+      ]);
 
+      // Handle Stage 6 and Limiting Factor (required)
       if (!step6Response.ok) {
         throw new Error(`Failed to fetch step6 results: ${step6Response.status}`);
       }
@@ -388,10 +449,30 @@ const Dashboard = () => {
       console.log('Advanced step6 API response:', step6Data);
       console.log('Advanced limiting factor API response:', limitingFactorData);
 
+      // Handle Stage 7 and Stage 8 (optional - may not exist for all projects)
+      let stage7Data = null;
+      let stage8Data = null;
+      
+      if (stage7Response.ok) {
+        stage7Data = await stage7Response.json();
+        console.log('Advanced stage7 API response:', stage7Data);
+      } else {
+        console.log('Stage 7 data not available for this project');
+      }
+      
+      if (stage8Response.ok) {
+        stage8Data = await stage8Response.json();
+        console.log('Advanced stage8 API response:', stage8Data);
+      } else {
+        console.log('Stage 8 data not available for this project');
+      }
+
       // Map API response to our expected format
       const outputs = {
         step6Results: step6Data,
         limitingFactor: limitingFactorData,
+        stage7Results: stage7Data,
+        stage8Results: stage8Data,
         // Add any other advanced-specific data mapping here
       };
 
@@ -565,7 +646,16 @@ const Dashboard = () => {
                           </div>
                           
                         </div>
-                        <div className="card-cta-br"><span className="eye-btn" aria-label="View details" onClick={() => navigate(`/design-systems/${system.id}`)}><i className="bi bi-eye"></i></span></div>
+                        <div className="card-cta-br">
+                          <span 
+                            className="eye-btn" 
+                            aria-label="View design projects" 
+                            onClick={() => navigate(`/design-projects/${system.id}`)}
+                            title="View projects for this design"
+                          >
+                            <i className="bi bi-eye"></i>
+                          </span>
+                        </div>
                       </Card.Body>
                     </Card>
                   ))}
@@ -586,7 +676,7 @@ const Dashboard = () => {
                     <Card 
                       key={designSystems[3].id} 
                       className="design-system-card" 
-                      onClick={() => navigate(`/design-systems/${designSystems[3].id}`)}
+                      onClick={() => navigate(`/design-projects/${designSystems[3].design_id}`)}
                     >
                       <Card.Body>
                         <div className="d-flex justify-content-between align-items-start">

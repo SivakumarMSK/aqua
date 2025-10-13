@@ -17,6 +17,55 @@
     margin: 0 auto;
 }
 
+/* Stage Option Cards */
+.stage-option-card {
+  background: #fff;
+  border: 2px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 1.5rem;
+  transition: all 0.3s ease;
+  cursor: pointer;
+  height: 100%;
+}
+
+.stage-option-card:hover {
+  border-color: #3b82f6;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
+}
+
+.stage-checkbox .form-check-input:checked {
+  background-color: #3b82f6;
+  border-color: #3b82f6;
+}
+
+.stage-checkbox .form-check-label {
+  font-weight: 600;
+  color: #1f2937;
+  font-size: 1.1rem;
+}
+
+.placeholder-input {
+  background-color: #f9fafb;
+  border-color: #d1d5db;
+  color: #6b7280;
+}
+
+.bio-filter-card {
+  border-left: 4px solid #10b981;
+}
+
+.sump-card {
+  border-left: 4px solid #06b6d4;
+}
+
+.pump-card {
+  border-left: 4px solid #8b5cf6;
+}
+
+.power-card {
+  border-left: 4px solid #f59e0b;
+}
+
 /* Advanced Layout Styles */
 .advanced-layout .row {
     margin-left: -15px;
@@ -462,10 +511,17 @@
     vertical-align: middle;
     position: relative;
     top: 0;
+    white-space: nowrap;
 }
 
 .navigation-buttons .button-group-right {
     margin-left: auto;
+    
+    display: flex;
+    gap: 10px;
+}
+
+.navigation-buttons .button-group-left {
     display: flex;
     gap: 10px;
 }
@@ -649,5 +705,287 @@
 .calculation-card.disabled-card .card-continue-btn:disabled {
     opacity: 0.5;
     cursor: not-allowed;
+}
+
+/* Enhanced Advanced Configuration Styles */
+.advanced-config-header {
+    background: linear-gradient(135deg, #f8fbff 0%, #e8f4fd 100%);
+    border-radius: 16px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+    border: 1px solid #e1e8f0;
+}
+
+.config-icon {
+    width: 80px;
+    height: 80px;
+    background: linear-gradient(135deg, #0059FF 0%, #00FFC8 100%);
+    border-radius: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto;
+    color: white;
+    font-size: 2rem;
+    box-shadow: 0 8px 32px rgba(0, 89, 255, 0.2);
+}
+
+.advanced-config-container {
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    overflow: hidden;
+    border: 1px solid #e5e7eb;
+}
+
+.config-content {
+    padding: 2rem;
+}
+
+.config-section {
+    background: #f8fafc;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 2rem;
+    transition: all 0.2s ease;
+}
+
+.config-section:hover {
+    border-color: #d1d5db;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.section-header {
+    text-align: left;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 2px solid #e5e7eb;
+}
+
+.section-header h4 {
+    color: #1f2937;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    font-size: 1.25rem;
+    display: flex;
+    align-items: center;
+}
+
+.section-header p {
+    color: #6b7280;
+    margin-bottom: 0;
+    font-size: 0.95rem;
+}
+
+.stage-section {
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin-top: 1rem;
+}
+
+.stage-section-title {
+    color: #374151;
+    font-weight: 600;
+    font-size: 1rem;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+}
+
+.stage-card {
+    background: #f8fafc;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 1.25rem;
+    height: 100%;
+    transition: all 0.2s ease;
+}
+
+.stage-card:hover {
+    border-color: #d1d5db;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.stage-title {
+    color: #1f2937;
+    font-weight: 600;
+    font-size: 0.9rem;
+    margin-bottom: 1rem;
+    text-align: center;
+    padding: 0.5rem;
+    background: #e5e7eb;
+    border-radius: 6px;
+}
+
+.stage-params {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.checkbox-container {
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 1rem;
+    margin-top: 1rem;
+}
+
+.custom-checkbox .form-check-input:checked {
+    background-color: #0059FF;
+    border-color: #0059FF;
+}
+
+.custom-checkbox .form-check-input:focus {
+    box-shadow: 0 0 0 0.2rem rgba(0, 89, 255, 0.25);
+}
+
+/* Mobile Responsiveness for Advanced Config */
+@media (max-width: 768px) {
+    .advanced-config-header {
+        padding: 1.5rem 1rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    .config-icon {
+        width: 60px;
+        height: 60px;
+        font-size: 1.5rem;
+    }
+    
+    .config-content {
+        padding: 1.5rem 1rem;
+    }
+    
+    .config-section {
+        padding: 1.5rem;
+    }
+    
+    .stage-section {
+        padding: 1rem;
+    }
+    
+    .stage-card {
+        padding: 1rem;
+    }
+    
+    .section-header h4 {
+        font-size: 1.1rem;
+    }
+    
+    .stage-section-title {
+        font-size: 0.9rem;
+    }
+}
+
+/* Modern Tab Navigation Styles */
+.modern-tab-container {
+    background: #f8fafc;
+    border-radius: 12px;
+    padding: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.tab-nav {
+    display: flex;
+    gap: 4px;
+    background: white;
+    border-radius: 8px;
+    padding: 4px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.tab-item {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 12px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+    background: transparent;
+    border: none;
+    font-weight: 500;
+    color: #64748b;
+    font-size: 14px;
+    min-height: 44px;
+}
+
+.tab-item:hover {
+    background: #f1f5f9;
+    color: #334155;
+    transform: translateY(-1px);
+}
+
+.tab-item.active {
+    background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+    color: white;
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+    transform: translateY(-2px);
+}
+
+.tab-item.active:hover {
+    background: linear-gradient(135deg, #2563eb, #1e40af);
+    color: white;
+    transform: translateY(-2px);
+}
+
+.tab-icon {
+    font-size: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+}
+
+.tab-label {
+    font-weight: 600;
+    letter-spacing: 0.025em;
+}
+
+/* Responsive design for smaller screens */
+@media (max-width: 768px) {
+    .tab-item {
+        padding: 10px 12px;
+        font-size: 13px;
+        min-height: 40px;
+    }
+    
+    .tab-icon {
+        font-size: 14px;
+        width: 18px;
+        height: 18px;
+    }
+    
+    .tab-label {
+        font-size: 12px;
+    }
+}
+
+/* Animation for tab switching */
+.tab-item {
+    position: relative;
+    overflow: hidden;
+}
+
+.tab-item::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    transition: left 0.5s;
+}
+
+.tab-item:hover::before {
+    left: 100%;
 }
 

@@ -9,6 +9,7 @@ import Dashboard from './components/Dashboard'
 import AllDesignSystems from './components/AllDesignSystems';
 import AllDesigns from './components/AllDesigns';
 import AllProjects from './components/AllProjects';
+import DesignProjects from './components/DesignProjects';
 import CreateDesignSystem from './components/CreateDesignSystem';
 import Review from './components/Review';
 import MassBalanceReport from './components/MassBalanceReport';
@@ -36,6 +37,7 @@ const App = () => {
 <Route path="/design-systems" element={<AllDesignSystems />} />
         <Route path="/all-designs" element={<AllDesigns />} />
         <Route path="/all-projects" element={<AllProjects />} />
+        <Route path="/design-projects/:designId" element={<DesignProjects />} />
         <Route path="/design-systems/new" element={<CreateDesignSystem />}/>
         <Route path="/review" element={<Review />} />
         <Route path="/reports/:id" element={<MassBalanceReport />} />

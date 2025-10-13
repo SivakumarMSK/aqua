@@ -2,9 +2,175 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getRecommendedValues, getSpecies } from '../services/speciesService';
 import { createDesignSystem, createWaterQualityParameters } from '../services/designSystemService.jsx';
+import Swal from 'sweetalert2';
 import { postAdvancedParameters, getAdvancedStep6Results, getAdvancedLimitingFactor } from '../services/advancedService';
-import { generateMassBalanceReport, generateAdvancedReportPdf } from '../utils/pdfGenerator';
-import { getCurrentPlan } from '../utils/subscriptionUtils';
+
+// Stage 7 API functions
+const postStage7Parameters = async (projectId, payload) => {
+  try {
+    const token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
+    if (!token) {
+      throw new Error('Authentication token not found');
+    }
+
+    const response = await fetch(`/backend/advanced/formulas/api/projects/${projectId}/step7`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      },
+      body: JSON.stringify(payload)
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const data = await response.json();
+    return { status: 'success', data };
+  } catch (error) {
+    console.error('Stage 7 API error:', error);
+    return { status: 'error', message: error.message };
+  }
+};
+
+const getStage7Results = async (projectId) => {
+  try {
+    const token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
+    if (!token) {
+      throw new Error('Authentication token not found');
+    }
+
+    // Debug logging to see what's being sent
+    console.log('🔍 Stage 7 GET API Debug:');
+    console.log('  Project ID:', projectId);
+    console.log('  Project ID type:', typeof projectId);
+    
+    const url = `/backend/advanced/formulas/api/projects/${projectId}/step7`;
+    console.log('  Full URL:', url);
+
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+        'Content-Length': 'calculated when request is sent'
+      }
+    });
+
+    console.log('  Response status:', response.status);
+    console.log('  Response ok:', response.ok);
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('  Error response:', errorText);
+      throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
+    }
+
+    const data = await response.json();
+    console.log('  Response data:', data);
+    return { status: 'success', data };
+  } catch (error) {
+    console.error('Stage 7 Results API error:', error);
+    return { status: 'error', message: error.message };
+  }
+};
+
+const postStage8Parameters = async (projectId, payload) => {
+  try {
+    const token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
+    if (!token) {
+      throw new Error('Authentication token not found');
+    }
+
+    // TODO: Replace with actual Stage 8 API endpoint when ready
+    const response = await fetch(`/backend/advanced/formulas/api/projects/${projectId}/step8`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      },
+      body: JSON.stringify(payload)
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const data = await response.json();
+    return { status: 'success', data };
+  } catch (error) {
+    console.error('Stage 8 API error:', error);
+    // For now, return success with placeholder data
+    return { status: 'success', message: 'Stage 8 API not ready - using placeholder data' };
+  }
+};
+
+const getStage8Results = async (projectId) => {
+  try {
+    const token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
+    if (!token) {
+      throw new Error('Authentication token not found');
+    }
+
+    const response = await fetch(`/backend/advanced/formulas/api/projects/${projectId}/step8`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Accept': 'application/json'
+      }
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const data = await response.json();
+    return { status: 'success', data };
+  } catch (error) {
+    console.error('Stage 8 Results API error:', error);
+    // Return placeholder data for now
+    return {
+      status: 'success',
+      data: {
+        project_id: Number(projectId) || 0,
+        status: 'success',
+        stage1: {
+          Q_l_s_Stage1: 5.8655,
+          limitingFlowRateStage1: 351.9319,
+          n_Motor_Stage1: 0.9,
+          n_Pump_Stage1: 0.7,
+          pump_Head_Stage1: 10.0,
+          pump_HydPower_Stage1: 0.5754,
+          pump_PowerkW_Stage1: 0.9133
+        },
+        stage2: {
+          Q_l_s_Stage2: 17.4646,
+          limitingFlowRateStage2: 1047.8756,
+          n_Motor_Stage2: 0.9,
+          n_Pump_Stage2: 0.7,
+          pump_Head_Stage2: 10.0,
+          pump_HydPower_Stage2: 1.7133,
+          pump_PowerkW_Stage2: 2.7195
+        },
+        stage3: {
+          Q_l_s_Stage3: 28.3211,
+          limitingFlowRateStage3: 1699.2674,
+          n_Motor_Stage3: 0.9,
+          n_Pump_Stage3: 0.7,
+          pump_Head_Stage3: 10.0,
+          pump_HydPower_Stage3: 2.7783,
+          pump_PowerkW_Stage3: 4.41
+        }
+      }
+    };
+  }
+};
+import { generateMassBalanceReport, generateAdvancedReportPdf, generateStage7ReportPdf, generateCompleteAdvancedReportPdf } from '../utils/pdfGenerator';
+import { getCurrentPlan, getCurrentPlanSync } from '../utils/subscriptionUtils';
 import Navbar from './Navbar';
 import Button from 'react-bootstrap/Button';
 import Form from 'react-bootstrap/Form';
@@ -23,15 +189,53 @@ const CreateDesignSystem = () => {
   const [loadingSpecies, setLoadingSpecies] = useState(true);
   
   // Subscription and calculation type states
-  const [userPlan, setUserPlan] = useState('Free');
+  const initialPlanSync = getCurrentPlanSync();
+  const [userPlan, setUserPlan] = useState(initialPlanSync || 'Free');
+  const [initialFree] = useState((initialPlanSync || 'Free') === 'Free');
+  const [planLoaded, setPlanLoaded] = useState(false);
   const [calculationType, setCalculationType] = useState('basic'); // 'basic' or 'advanced'
-  const [showCalculationTypeSelection, setShowCalculationTypeSelection] = useState(false);
+  const [showCalculationTypeSelection, setShowCalculationTypeSelection] = useState(true);
   const [showAdvancedLayout, setShowAdvancedLayout] = useState(false);
   const [designCreated, setDesignCreated] = useState(false);
   const [showAdvancedFields, setShowAdvancedFields] = useState(false);
   const [advancedReport, setAdvancedReport] = useState(null);
   const [isAdvancedReportView, setIsAdvancedReportView] = useState(false);
   const [limitingFactor, setLimitingFactor] = useState(null);
+  const [activeTab, setActiveTab] = useState('water');
+  // Advanced Report tabs: 'all' | 'stage6' | 'stage7' | 'stage8'
+  const [activeReportTab, setActiveReportTab] = useState('all');
+  
+  // Stage 7 and Stage 8 selection states
+  const [stage7Selected, setStage7Selected] = useState(false);
+  const [stage8Selected, setStage8Selected] = useState(false);
+  const [stage7Report, setStage7Report] = useState(null);
+  const [stage8Report, setStage8Report] = useState(null);
+  
+  // New flow states
+  const [showStage7Inputs, setShowStage7Inputs] = useState(false);
+  
+  // Stage 7 form data states
+  const [stage7FormData, setStage7FormData] = useState({
+    mbbr_location: 'Integrated',
+    media_to_water_volume_ratio: 0,
+    passive_nitrification_rate_stage1_percent: 0,
+    passive_nitrification_rate_stage2_percent: 0,
+    passive_nitrification_rate_stage3_percent: 0,
+    pump_stop_overflow_volume: 0,
+    standalone_height_diameter_ratio: 0,
+    volumetric_nitrification_rate_vtr: 0,
+    num_tanks_stage1: 0,
+    num_tanks_stage2: 0,
+    num_tanks_stage3: 0,
+    tank_dd_ratio_stage1: 0,
+    tank_dd_ratio_stage2: 0,
+    tank_dd_ratio_stage3: 0,
+    tank_freeboard_stage1: 0,
+    tank_freeboard_stage2: 0,
+    tank_freeboard_stage3: 0
+  });
+
+  // Stage 8 form data states
 
   // Fallback report when Step 6 API is not ready
   const buildZeroAdvancedReport = (projectId) => ({
@@ -113,6 +317,8 @@ const CreateDesignSystem = () => {
         console.error('Error checking user plan:', error);
         // Default to Free if error
         setUserPlan('Free');
+      } finally {
+        setPlanLoaded(true);
       }
     };
 
@@ -609,7 +815,14 @@ const CreateDesignSystem = () => {
         }
       } catch (error) {
         console.error('Failed to create design system:', error);
-        alert(error.message);
+        const message = error?.message || 'Failed to create design system';
+        // If API sent a duplicate/validation message, surface via SweetAlert2
+        await Swal.fire({
+          icon: 'error',
+          title: 'Could not create',
+          text: message,
+          confirmButtonColor: '#dc3545'
+        });
         return;
       } finally {
         setLoading(false);
@@ -2106,101 +2319,7 @@ const CreateDesignSystem = () => {
                   marginLeft: 'auto',
                   marginRight: '10px'
                 }}
-                onClick={async () => {
-                  try {
-                    setLoading(true);
-                    setError(''); // Clear any previous errors
-                    
-                    // Prepare API data
-                    const apiData = {
-                      designSystemName: formData.designSystemName,
-                      projectName: formData.projectName,
-                      systemPurpose: formData.systemPurpose,
-                      systemType: formData.systemType,
-                      targetSpecies: formData.targetSpecies,
-                      useRecommendedValues: formData.useRecommendedValues,
-                      // Add other fields...
-                      waterTemp: formData.waterTemp,
-                      ph: formData.ph,
-                      salinity: formData.salinity,
-                      siteElevation: formData.siteElevation,
-                      minDO: formData.minDO,
-                      maxCO2: formData.maxCO2,
-                      minTSS: formData.minTSS,
-                      maxTAN: formData.maxTAN,
-                      tankVolume: formData.tankVolume,
-                      numTanks: formData.numTanks,
-                      targetFishWeight: formData.targetFishWeight,
-                      targetNumFish: formData.targetNumFish,
-                      feedRate: formData.feedRate,
-                      feedProtein: formData.feedProtein,
-                      o2Absorption: formData.o2Absorption,
-                      tssRemoval: formData.tssRemoval,
-                      co2Removal: formData.co2Removal,
-                      tanRemoval: formData.tanRemoval
-                    };
-
-                    console.log('Sending data to API:', apiData);
-                    
-                    // Save to API
-                    const response = await createDesignSystem(apiData);
-                    
-                    // Handle the response based on its status
-                    if (response) {
-                      // Show appropriate message based on response status
-                      if (response.status === 'partial_success') {
-                        setError(response.message + ' - ' + response.error);
-                      } else {
-                        setError('Design system created successfully!');
-                      }
-
-                      // Log the created design details
-                      console.log('Design system created:', {
-                        design_id: response.design_id,
-                        project_id: response.project_id,
-                        status: response.status,
-                        message: response.message
-                      });
-                      
-                      // Navigate after a delay to show the message
-                      setTimeout(() => {
-                        navigate('/dashboard');
-                      }, 1500);
-                    }
-                  } catch (error) {
-                    console.error('Failed to save design system:', error);
-                    
-                    // Handle authentication errors
-                    if (error.message.includes('Authentication token not found') ||
-                        error.message.includes('Invalid token format') ||
-                        error.message.includes('Unauthorized access')) {
-                      setError('Session expired. Please log in again.');
-                      setTimeout(() => {
-                        navigate('/login');
-                      }, 1500);
-                      return;
-                    }
-                    
-                    // Handle permission errors
-                    if (error.message.includes('Access forbidden')) {
-                      setError('You do not have permission to create design systems.');
-                      return;
-                    }
-                    
-                    // Handle the user_id error case
-                    if (error.message.includes('user_id does not exist')) {
-                      setError('Design system created, but there was a minor issue. Proceeding...');
-                      setTimeout(() => {
-                        navigate('/dashboard');
-                      }, 1500);
-                    } else {
-                      // Handle other errors
-                      setError('Failed to save design system: ' + error.message);
-                    }
-                  } finally {
-                    setLoading(false);
-                  }
-                }}
+                onClick={() => navigate('/dashboard')}
               >
                 Save & Return to Dashboard
               </Button>
@@ -2389,7 +2508,14 @@ const CreateDesignSystem = () => {
                           
                         } catch (error) {
                           console.error('Error creating design system:', error);
-                          setError('Failed to create design system: ' + error.message);
+                          const message = error?.message || 'Failed to create design system';
+                          await Swal.fire({
+                            icon: 'error',
+                            title: 'Could not create',
+                            text: message,
+                            confirmButtonColor: '#dc3545'
+                          });
+                          setError('Failed to create design system: ' + message);
                         } finally {
                           setLoading(false);
                         }
@@ -2404,39 +2530,61 @@ const CreateDesignSystem = () => {
             </div>
           </div>
         ) : (
-          /* 2-column layout for remaining steps */
+          /* Enhanced Advanced Parameters Configuration */
           <>
-            <div className="text-center mb-4">
-              <h3>Advanced Parameters Configuration</h3>
-              <p className="text-muted">Configure all advanced parameters for your design system</p>
+            <div className="text-center mb-5">
+              <div className="advanced-config-header">
+                <div className="config-icon mb-3">
+                  <i className="bi bi-gear-wide-connected text-primary"></i>
+                </div>
+                <h2 className="mb-3">Advanced Parameters Configuration</h2>
+                <p className="text-muted lead">Configure comprehensive parameters for your advanced aquaculture system</p>
+              </div>
             </div>
 
-            {/* 2-column layout for remaining steps */}
-            <div className="row">
-              <div className="col-md-6">
-                {/* Water Quality Step */}
-                <div className="step-section mb-4">
-                  <h4>Water Quality Parameters</h4>
-                  <div className="form-group">
-                    <div className="mb-4">
-                      <h5>Required Parameters</h5>
+            {/* Clean Single-Page Layout */}
+            <div className="advanced-config-container">
+              <div className="config-content">
+                {/* Water Quality Section */}
+                <div className="config-section mb-5">
+                  <div className="section-header">
+                    <h4><i className="bi bi-droplet text-primary me-2"></i>Water Quality Parameters</h4>
+                    <p className="text-muted">Essential water quality settings for optimal fish health</p>
+                  </div>
+                  
+                  <div className="row g-3">
+                    <div className="col-md-6 col-lg-4">
                       {renderInputWithTooltip('waterTemp', 'Water Temperature', '°C')}
+                    </div>
+                    <div className="col-md-6 col-lg-4">
                       {renderInputWithTooltip('salinity', 'Salinity', '%')}
+                    </div>
+                    <div className="col-md-6 col-lg-4">
                       {renderInputWithTooltip('siteElevation', 'Site Elevation', 'm')}
                     </div>
-                    <div className="mb-4">
-                      <h5>Other Water Quality Parameters</h5>
+                    <div className="col-md-6 col-lg-4">
                       {renderInputWithTooltip('minDO', 'Minimum Dissolved Oxygen (O₂)', 'mg/l')}
+                    </div>
+                    <div className="col-md-6 col-lg-4">
                       {renderInputWithTooltip('targetMinO2Saturation', 'Target Minimum O₂ Saturation', '%')}
-                      {renderInputWithTooltip('minTSS', 'Maximum Total Suspended Solids (TSS)', 'mg/l')}
-                      {renderInputWithTooltip('ph', 'ph Level')}
-                      {renderInputWithTooltip('maxCO2', 'Maximum Dissolved Carbon Dioxide (CO₂)', 'mg/l')}
-                      {renderInputWithTooltip('maxTAN', 'Maximum Total Ammonia (TAN)', 'mg/L')}
+                    </div>
+                    <div className="col-md-6 col-lg-4">
+                      {renderInputWithTooltip('ph', 'pH Level')}
+                    </div>
+                    <div className="col-md-6 col-lg-4">
                       {renderInputWithTooltip('alkalinity', 'Alkalinity', 'mg/L')}
                     </div>
-                    <div className="mb-4">
-                      <h5>Additional Options</h5>
-                      <Form.Group className="mb-3">
+                    <div className="col-md-6 col-lg-4">
+                      {renderInputWithTooltip('minTSS', 'Maximum Total Suspended Solids (TSS)', 'mg/l')}
+                    </div>
+                    <div className="col-md-6 col-lg-4">
+                      {renderInputWithTooltip('maxCO2', 'Maximum Dissolved Carbon Dioxide (CO₂)', 'mg/l')}
+                    </div>
+                    <div className="col-md-6 col-lg-4">
+                      {renderInputWithTooltip('maxTAN', 'Maximum Total Ammonia (TAN)', 'mg/L')}
+                    </div>
+                    <div className="col-12">
+                      <div className="checkbox-container">
                         <Form.Check
                           type="checkbox"
                           name="supplementPureO2"
@@ -2444,68 +2592,198 @@ const CreateDesignSystem = () => {
                           checked={formData.supplementPureO2}
                           onChange={handleInputChange}
                           disabled={loading}
+                          className="custom-checkbox"
                         />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Production Section */}
+                <div className="config-section mb-5">
+                  <div className="section-header">
+                    <h4><i className="bi bi-fish text-primary me-2"></i>Production Information</h4>
+                    <p className="text-muted">Define production targets and fish growth parameters</p>
+                  </div>
+                  
+                  <div className="row g-3">
+                    <div className="col-md-6 col-lg-4">
+                      {renderInputWithTooltip('productionTarget_t', 'Target production per year', 't', 'number')}
+                    </div>
+                    <div className="col-md-6 col-lg-4">
+                      {renderInputWithTooltip('targetFishWeight', 'Target market fish size', 'g', 'number')}
+                    </div>
+                    <div className="col-md-6 col-lg-4">
+                      <Form.Group className="mb-3">
+                        <Form.Label>Harvest frequency</Form.Label>
+                        <Form.Select
+                          name="harvestFrequency"
+                          value={formData.harvestFrequency}
+                          onChange={handleInputChange}
+                          disabled={loading}
+                        >
+                          <option value="">Select Frequency</option>
+                          <option value="Monthly">Monthly</option>
+                          <option value="Fortnightly">Fortnightly</option>
+                          <option value="Weekly">Weekly</option>
+                        </Form.Select>
                       </Form.Group>
+                    </div>
+                    <div className="col-md-6 col-lg-4">
+                      {renderInputWithTooltip('initialWeightWiG', 'Initial weight', 'g', 'number')}
+                    </div>
+                    <div className="col-md-6 col-lg-4">
+                      {renderInputWithTooltip('juvenileSize', 'Size of juveniles at purchase', 'g', 'number')}
+                    </div>
+                  </div>
+
+                  {/* Stage-wise Parameters */}
+                  <div className="stage-section mt-4">
+                    <h5 className="stage-section-title">
+                      <i className="bi bi-layers text-info me-2"></i>
+                      Stage-wise Feed Conversion & Mortality
+                    </h5>
+                    <div className="row g-3">
+                      <div className="col-md-4">
+                        <div className="stage-card">
+                          <h6 className="stage-title">Stage 1 (Juvenile)</h6>
+                          <div className="stage-params">
+                            {renderInputWithTooltip('FCR_Stage1', 'FCR', '', 'number')}
+                            {renderInputWithTooltip('FeedProtein_Stage1', 'Feed protein', '%', 'number')}
+                            {renderInputWithTooltip('Estimated_mortality_Stage1', 'Mortality', '%', 'number')}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="col-md-4">
+                        <div className="stage-card">
+                          <h6 className="stage-title">Stage 2 (Fingerling)</h6>
+                          <div className="stage-params">
+                            {renderInputWithTooltip('FCR_Stage2', 'FCR', '', 'number')}
+                            {renderInputWithTooltip('FeedProtein_Stage2', 'Feed protein', '%', 'number')}
+                            {renderInputWithTooltip('Estimated_mortality_Stage2', 'Mortality', '%', 'number')}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="col-md-4">
+                        <div className="stage-card">
+                          <h6 className="stage-title">Stage 3 (Growout)</h6>
+                          <div className="stage-params">
+                            {renderInputWithTooltip('FCR_Stage3', 'FCR', '', 'number')}
+                            {renderInputWithTooltip('FeedProtein_Stage3', 'Feed protein', '%', 'number')}
+                            {renderInputWithTooltip('Estimated_mortality_Stage3', 'Mortality', '%', 'number')}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* System Efficiency Section */}
+                <div className="config-section mb-5">
+                  <div className="section-header">
+                    <h4><i className="bi bi-speedometer2 text-primary me-2"></i>System Efficiency Parameters</h4>
+                    <p className="text-muted">Configure system efficiency and removal rates</p>
+                  </div>
+                  
+                  <div className="row g-3">
+                    <div className="col-md-6 col-lg-3">
+                      {renderInputWithTooltip('o2Absorption', 'O₂ Absorption Efficiency', '%')}
+                    </div>
+                    <div className="col-md-6 col-lg-3">
+                      {renderInputWithTooltip('co2Removal', 'CO₂ Removal Efficiency', '%')}
+                    </div>
+                    <div className="col-md-6 col-lg-3">
+                      {renderInputWithTooltip('tssRemoval', 'TSS Removal Efficiency', '%')}
+                    </div>
+                    <div className="col-md-6 col-lg-3">
+                      {renderInputWithTooltip('tanRemoval', 'TAN Removal Efficiency', '%')}
                     </div>
                   </div>
                 </div>
               </div>
+                  </div>
 
-              <div className="col-md-6">
-                {/* Production Step */}
-                <div className="step-section mb-4">
-                  <h4>Production Information</h4>
-                  <div className="form-group">
-                    {/* Production Information - Required Fields Only */}
-                    {renderInputWithTooltip('initialWeightWiG', 'Initial weight', 'g', 'number')}
-                    {renderInputWithTooltip('juvenileSize', 'Size of juveniles at purchase', 'g', 'number')}
-                    {renderInputWithTooltip('targetFishWeight', 'Target market fish size', 'g', 'number')}
-                    {renderInputWithTooltip('productionTarget_t', 'Target production per year', 't', 'number')}
-                    <Form.Group className="mb-3">
-                      <Form.Label>Harvest frequency</Form.Label>
-                      <Form.Select
-                        name="harvestFrequency"
-                        value={formData.harvestFrequency}
-                        onChange={handleInputChange}
-                        disabled={loading}
-                      >
-                        <option value="">Select Frequency</option>
-                        <option value="Monthly">Monthly</option>
-                        <option value="Fortnightly">Fortnightly</option>
-                        <option value="Weekly">Weekly</option>
-                      </Form.Select>
-                    </Form.Group>
-                    {renderInputWithTooltip('FCR_Stage1', 'FCR (Stage1 juvenile)', '', 'number')}
-                    {renderInputWithTooltip('FeedProtein_Stage1', 'Feed protein content (Stage 1)', '%', 'number')}
-                    {renderInputWithTooltip('FCR_Stage2', 'FCR (Stage 2 fingerling)', '', 'number')}
-                    {renderInputWithTooltip('FeedProtein_Stage2', 'Feed protein content (Stage 2)', '%', 'number')}
-                    {renderInputWithTooltip('FCR_Stage3', 'FCR (Stage 3 growout)', '', 'number')}
-                    {renderInputWithTooltip('FeedProtein_Stage3', 'Feed protein content (Stage 3)', '%', 'number')}
-                    {renderInputWithTooltip('Estimated_mortality_Stage1', 'Estimated mortality Stage 1', '%', 'number')}
-                    {renderInputWithTooltip('Estimated_mortality_Stage2', 'Estimated mortality Stage 2', '%', 'number')}
-                    {renderInputWithTooltip('Estimated_mortality_Stage3', 'Estimated mortality Stage 3', '%', 'number')}
+                {/* Additional Calculation Stages Selection */}
+                <div className="config-section mb-5">
+                  <div className="section-header">
+                    <h4><i className="bi bi-calculator text-primary me-2"></i>Additional Calculation Stages</h4>
+                    <p className="text-muted">Select additional calculation stages for comprehensive system analysis</p>
+                  </div>
+                  
+                  <div className="row g-3">
+                    <div className="col-md-6">
+                      <div className="stage-option-card">
+                        <Form.Check
+                          type="checkbox"
+                          id="stage7-checkbox"
+                          label="Calculate Bio Filter & Sump Size (Stage 7)"
+                          checked={stage7Selected}
+                          onChange={(e) => setStage7Selected(e.target.checked)}
+                          className="stage-checkbox"
+                        />
+                        <p className="text-muted small mt-2">
+                          Calculate optimal bio filter and sump sizing for your system
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+
+                {/* Stage 8 Input Fields - Basic Pump Size */}
+                {stage8Selected && (
+                  <div className="config-section mb-5">
+                    <div className="section-header">
+                      <h4><i className="bi bi-gear text-primary me-2"></i>Stage 8: Basic Pump Size Parameters</h4>
+                      <p className="text-muted">Configure parameters for basic pump sizing calculations</p>
+                    </div>
                     
-                    {/* Commented out for future use */}
-                    {/* {renderInputWithTooltip('tankVolume', 'Tank Volume', 'm³')} */}
-                    {/* {renderInputWithTooltip('feedRate', 'Feed rate', '% of biomass/day')} */}
-                    {/* {renderInputWithTooltip('numTanks', 'Total number of tanks')} */}
-                    {/* {renderInputWithTooltip('targetNumFish', 'Target number of fish at harvest')} */}
-                    {/* {renderInputWithTooltip('feedProtein', 'Feed protein content', '%')} */}
+                    <div className="row g-3">
+                      <div className="col-md-6 col-lg-4">
+                        <Form.Group>
+                          <Form.Label>Pump Flow Rate (L/min)</Form.Label>
+                          <Form.Control
+                            type="number"
+                            placeholder="Enter pump flow rate"
+                            disabled
+                            className="placeholder-input"
+                          />
+                          <Form.Text className="text-muted">
+                            Placeholder - Parameters not ready
+                          </Form.Text>
+                        </Form.Group>
+                      </div>
+                      <div className="col-md-6 col-lg-4">
+                        <Form.Group>
+                          <Form.Label>Pump Head (m)</Form.Label>
+                          <Form.Control
+                            type="number"
+                            placeholder="Enter pump head"
+                            disabled
+                            className="placeholder-input"
+                          />
+                          <Form.Text className="text-muted">
+                            Placeholder - Parameters not ready
+                          </Form.Text>
+                        </Form.Group>
+                      </div>
+                      <div className="col-md-6 col-lg-4">
+                        <Form.Group>
+                          <Form.Label>Pump Type</Form.Label>
+                          <Form.Control
+                            type="text"
+                            placeholder="Enter pump type"
+                            disabled
+                            className="placeholder-input"
+                          />
+                          <Form.Text className="text-muted">
+                            Placeholder - Parameters not ready
+                          </Form.Text>
+                        </Form.Group>
+                      </div>
+                    </div>
                   </div>
-                </div>
-
-                {/* Efficiency Step */}
-                <div className="step-section mb-4">
-                  <h4>System Efficiency Parameters</h4>
-                  <div className="form-group">
-                    {renderInputWithTooltip('o2Absorption', 'O₂ Absorption Efficiency', '%')}
-                    {renderInputWithTooltip('co2Removal', 'CO₂ Removal Efficiency', '%')}
-                    {renderInputWithTooltip('tssRemoval', 'TSS Removal Efficiency', '%')}
-                    {renderInputWithTooltip('tanRemoval', 'TAN Removal Efficiency', '%')}
-                  </div>
-                </div>
-              </div>
-            </div>
+                )}
 
             {/* Single Calculate Button */}
             <div className="calculate-section">
@@ -2533,118 +2811,126 @@ const CreateDesignSystem = () => {
                   <Button
                     variant="primary"
                     onClick={async () => {
-                  console.log('🚀 Advanced Calculate button clicked!');
-                  try {
-                    setLoading(true);
-                    setError('');
-                    
-                    console.log('🔍 Checking for project ID...');
-                    const currentProjectId = localStorage.getItem('currentProjectId');
-                    console.log('🔍 Project ID found:', currentProjectId);
-                    
-                    if (!currentProjectId) {
-                      throw new Error('Project ID not found. Please complete Initial Setup first.');
-                    }
+                      console.log('🚀 Advanced Calculate button clicked!');
+                      try {
+                        setLoading(true);
+                        setError('');
+                        
+                        console.log('🔍 Checking for project ID...');
+                        const currentProjectId = localStorage.getItem('currentProjectId');
+                        console.log('🔍 Project ID found:', currentProjectId);
+                        
+                        if (!currentProjectId) {
+                          throw new Error('Project ID not found. Please complete Initial Setup first.');
+                        }
 
-                    const advancedPayload = {
-                      TAN_max: formData.maxTAN ? parseFloat(formData.maxTAN) : 2,
-                      TSS_max: formData.minTSS ? parseFloat(formData.minTSS) : 80,
-                      alkalinity: formData.alkalinity ? parseFloat(formData.alkalinity) : 250,
-                      co2_removal_efficiency: formData.co2Removal ? parseFloat(formData.co2Removal) : 70,
-                      dissolved_CO2_max: formData.maxCO2 ? parseFloat(formData.maxCO2) : 15,
-                      dissolved_O2_min: formData.minDO ? parseFloat(formData.minDO) : 6,
-                      elevation_m: formData.siteElevation ? parseFloat(formData.siteElevation) : 0,
-                      estimated_mortality_stage1: formData.Estimated_mortality_Stage1 ? parseFloat(formData.Estimated_mortality_Stage1) : 8,
-                      estimated_mortality_stage2: formData.Estimated_mortality_Stage2 ? parseFloat(formData.Estimated_mortality_Stage2) : 0,
-                      estimated_mortality_stage3: formData.Estimated_mortality_Stage3 ? parseFloat(formData.Estimated_mortality_Stage3) : 0,
-                      fcr_stage1: formData.FCR_Stage1 ? parseFloat(formData.FCR_Stage1) : 1.1,
-                      fcr_stage2: formData.FCR_Stage2 ? parseFloat(formData.FCR_Stage2) : 1.2,
-                      fcr_stage3: formData.FCR_Stage3 ? parseFloat(formData.FCR_Stage3) : 1.3,
-                      feed_protein_stage1: formData.FeedProtein_Stage1 ? parseFloat(formData.FeedProtein_Stage1) : 45,
-                      feed_protein_stage2: formData.FeedProtein_Stage2 ? parseFloat(formData.FeedProtein_Stage2) : 45,
-                      feed_protein_stage3: formData.FeedProtein_Stage3 ? parseFloat(formData.FeedProtein_Stage3) : 45,
-                      harvest_frequency: formData.harvestFrequency || "Fortnightly",
-                      juvenile_size: formData.juvenileSize ? parseFloat(formData.juvenileSize) : null,
-                      mbbr_location: "string",
-                      media_to_water_volume_ratio: 0,
-                      num_tanks_stage1: parseFloat(formData.numTanks) || 0,
-                      num_tanks_stage2: 0,
-                      num_tanks_stage3: 0,
-                      oxygen_injection_efficiency: formData.o2Absorption ? parseFloat(formData.o2Absorption) : 80,
-                      pH: formData.ph ? parseFloat(formData.ph) : 7,
-                      passive_nitrification_rate_stage1_percent: 0,
-                      passive_nitrification_rate_stage2_percent: 0,
-                      passive_nitrification_rate_stage3_percent: 0,
-                      production_target_t: formData.productionTarget_t ? parseFloat(formData.productionTarget_t) : 100,
-                      pump_stop_overflow_volume: 0,
-                      salinity: formData.salinity ? parseFloat(formData.salinity) : 0,
-                      standalone_height_diameter_ratio: 0,
-                      supplement_pure_o2: formData.supplementPureO2,
-                      tan_removal_efficiency: formData.tanRemoval ? parseFloat(formData.tanRemoval) : 60,
-                      tank_dd_ratio_stage1: 0,
-                      tank_dd_ratio_stage2: 0,
-                      tank_dd_ratio_stage3: 0,
-                      tank_freeboard_stage1: 0,
-                      tank_freeboard_stage2: 0,
-                      tank_freeboard_stage3: 0,
-                      target_market_fish_size: formData.targetFishWeight ? parseFloat(formData.targetFishWeight) : null,
-                      target_min_o2_saturation: formData.targetMinO2Saturation ? parseFloat(formData.targetMinO2Saturation) : 95,
-                      temperature: formData.waterTemp ? parseFloat(formData.waterTemp) : 25,
-                      tss_removal_efficiency: formData.tssRemoval ? parseFloat(formData.tssRemoval) : 80,
-                      volumetric_nitrification_rate_vtr: 0,
-                      type: "advanced" // Add type field for advanced calculation
-                    };
+                        const advancedPayload = {
+                          // Water quality parameters
+                          pH: formData.ph ? parseFloat(formData.ph) : 7,
+                          temperature: formData.waterTemp ? parseFloat(formData.waterTemp) : 27,
+                          dissolved_O2_min: formData.minDO ? parseFloat(formData.minDO) : 3.0,
+                          target_min_o2_saturation: formData.targetMinO2Saturation ? parseFloat(formData.targetMinO2Saturation) : 95,
+                          TAN_max: formData.maxTAN ? parseFloat(formData.maxTAN) : 2,
+                          dissolved_CO2_max: formData.maxCO2 ? parseFloat(formData.maxCO2) : 15,
+                          TSS_max: formData.minTSS ? parseFloat(formData.minTSS) : 80,
+                          salinity: formData.salinity ? parseFloat(formData.salinity) : 0,
+                          alkalinity: formData.alkalinity ? parseFloat(formData.alkalinity) : 250,
+                          supplement_pure_o2: formData.supplementPureO2 || false,
+                          elevation_m: formData.siteElevation ? parseFloat(formData.siteElevation) : 500,
 
-                    console.log('📤 Advanced Calculate Payload:', advancedPayload);
-                    console.log('🌐 Calling postAdvancedParameters API...');
-                    const response = await postAdvancedParameters(currentProjectId, advancedPayload);
-                    console.log('✅ Advanced Calculate Response:', response);
+                          // System efficiency parameters
+                          oxygen_injection_efficiency: formData.o2Absorption ? parseFloat(formData.o2Absorption) : 90,
+                          tss_removal_efficiency: formData.tssRemoval ? parseFloat(formData.tssRemoval) : 80,
+                          co2_removal_efficiency: formData.co2Removal ? parseFloat(formData.co2Removal) : 70,
+                          tan_removal_efficiency: formData.tanRemoval ? parseFloat(formData.tanRemoval) : 80,
 
-                    // Fetch report results or fallback to zeros
-                    let reportData = null;
-                    try {
-                      console.log('📊 Fetching Advanced Step 6 Results...');
-                      reportData = await getAdvancedStep6Results(currentProjectId);
-                      console.log('✅ Advanced Step 6 Results:', reportData);
-                    } catch (fetchErr) {
-                      console.warn('Advanced report API not ready; using zero report');
-                      reportData = buildZeroAdvancedReport(currentProjectId);
-                    }
+                          // Species and production parameters
+                          species: formData.targetSpecies || "Nile tilapia",
+                          // These three fields must ALWAYS be included in the request - null if empty
+                          initial_weight_wi_g: (formData.initialWeight && formData.initialWeight.toString().trim() !== '') ? parseFloat(formData.initialWeight) : null,
+                          juvenile_size: (formData.juvenileSize && formData.juvenileSize.toString().trim() !== '') ? parseFloat(formData.juvenileSize) : null,
+                          target_market_fish_size: (formData.targetFishWeight && formData.targetFishWeight.toString().trim() !== '') ? parseFloat(formData.targetFishWeight) : null,
 
-                    // Fetch Limiting Factor (with safe fallback)
-                    let lf = null;
-                    try {
-                      console.log('📊 Fetching Advanced Limiting Factor...');
-                      lf = await getAdvancedLimitingFactor(currentProjectId);
-                      console.log('✅ Advanced Limiting Factor:', lf);
-                    } catch (e) {
-                      console.warn('Limiting Factor API not available; using zero values');
-                      lf = {
-                        project_id: Number(currentProjectId) || 0,
-                        stage1: { factor: '-', flow_l_per_min: 0, flow_m3_per_hr: 0 },
-                        stage2: { factor: '-', flow_l_per_min: 0, flow_m3_per_hr: 0 },
-                        stage3: { factor: '-', flow_l_per_min: 0, flow_m3_per_hr: 0 },
-                        status: 'success'
-                      };
-                    }
+                          production_target_t: formData.productionTarget_t ? parseFloat(formData.productionTarget_t) : 100,
+                          harvest_frequency: formData.harvestFrequency || "Fortnightly",
 
-                    // Show standalone report view (like new page)
-                    setAdvancedReport(reportData);
-                    setLimitingFactor(lf);
-                    setIsAdvancedReportView(true);
-                    
-                  } catch (err) {
-                    console.error('❌ Error in Advanced Calculation:', err);
-                    console.error('❌ Error details:', err.message, err.stack);
-                    setError(err.message);
-                  } finally {
-                    console.log('🏁 Advanced calculation process finished');
-                    setLoading(false);
-                  }
+                          // Feed parameters
+                          fcr_stage1: formData.FCR_Stage1 ? parseFloat(formData.FCR_Stage1) : 1.1,
+                          feed_protein_stage1: formData.FeedProtein_Stage1 ? parseFloat(formData.FeedProtein_Stage1) : 45,
+                          fcr_stage2: formData.FCR_Stage2 ? parseFloat(formData.FCR_Stage2) : 1.2,
+                          feed_protein_stage2: formData.FeedProtein_Stage2 ? parseFloat(formData.FeedProtein_Stage2) : 45,
+                          fcr_stage3: formData.FCR_Stage3 ? parseFloat(formData.FCR_Stage3) : 1.3,
+                          feed_protein_stage3: formData.FeedProtein_Stage3 ? parseFloat(formData.FeedProtein_Stage3) : 45,
+
+                          // Mortality parameters
+                          estimated_mortality_stage1: formData.Estimated_mortality_Stage1 ? parseFloat(formData.Estimated_mortality_Stage1) : 0,
+                          estimated_mortality_stage2: formData.Estimated_mortality_Stage2 ? parseFloat(formData.Estimated_mortality_Stage2) : 0,
+                          estimated_mortality_stage3: formData.Estimated_mortality_Stage3 ? parseFloat(formData.Estimated_mortality_Stage3) : 0
+                        };
+
+                        // Debug: Verify the three null parameters are always included
+                        console.log('🔍 Null Parameters Check:');
+                        console.log('  initial_weight_wi_g:', advancedPayload.initial_weight_wi_g);
+                        console.log('  juvenile_size:', advancedPayload.juvenile_size);
+                        console.log('  target_market_fish_size:', advancedPayload.target_market_fish_size);
+                        console.log('📤 Advanced Calculate Payload:', advancedPayload);
+                        console.log('🌐 Calling postAdvancedParameters API...');
+                        const response = await postAdvancedParameters(currentProjectId, advancedPayload);
+                        console.log('✅ Advanced Calculate Response:', response);
+
+                        // Fetch report results or fallback to zeros
+                        let reportData = null;
+                        try {
+                          console.log('📊 Fetching Advanced Step 6 Results...');
+                          reportData = await getAdvancedStep6Results(currentProjectId);
+                          console.log('✅ Advanced Step 6 Results:', reportData);
+                        } catch (fetchErr) {
+                          console.warn('Advanced report API not ready; using zero report');
+                          reportData = buildZeroAdvancedReport(currentProjectId);
+                        }
+
+                        // Fetch Limiting Factor (with safe fallback)
+                        let lf = null;
+                        try {
+                          console.log('📊 Fetching Advanced Limiting Factor...');
+                          lf = await getAdvancedLimitingFactor(currentProjectId);
+                          console.log('✅ Advanced Limiting Factor:', lf);
+                        } catch (e) {
+                          console.warn('Limiting Factor API not available; using zero values');
+                          lf = {
+                            project_id: Number(currentProjectId) || 0,
+                            stage1: { factor: '-', flow_l_per_min: 0, flow_m3_per_hr: 0 },
+                            stage2: { factor: '-', flow_l_per_min: 0, flow_m3_per_hr: 0 },
+                            stage3: { factor: '-', flow_l_per_min: 0, flow_m3_per_hr: 0 },
+                            status: 'success'
+                          };
+                        }
+
+                        // Check if Stage 7 is selected
+                        if (stage7Selected) {
+                          // Go to Stage 7 inputs page
+                          setAdvancedReport(reportData);
+                          setLimitingFactor(lf);
+                          setShowStage7Inputs(true);
+                        } else {
+                          // Go directly to reports (Stage 6 only)
+                          setAdvancedReport(reportData);
+                          setLimitingFactor(lf);
+                          setIsAdvancedReportView(true);
+                        }
+                        
+                      } catch (err) {
+                        console.error('❌ Error in Advanced Calculation:', err);
+                        console.error('❌ Error details:', err.message, err.stack);
+                        setError(err.message);
+                      } finally {
+                        console.log('🏁 Advanced calculation process finished');
+                        setLoading(false);
+                      }
                     }}
                     disabled={loading}
                   >
-                    {loading ? 'Calculating...' : 'Calculate Advanced Report'}
+                    {loading ? 'Calculating...' : stage7Selected ? 'Continue' : 'Calculate Advanced Report'}
                   </Button>
                 </div>
               </div>
@@ -2717,11 +3003,17 @@ const CreateDesignSystem = () => {
           {/* Advanced Calculation Card */}
           <div className="col-md-6">
             <Card 
-              className={`calculation-card h-100 ${calculationType === 'advanced' ? 'selected' : ''} ${userPlan === 'Free' ? 'disabled-card' : ''}`}
-              onClick={() => userPlan !== 'Free' && setCalculationType('advanced')}
+              className={`calculation-card h-100 ${calculationType === 'advanced' ? 'selected' : ''} ${((planLoaded && userPlan === 'Free') || (!planLoaded && initialFree)) ? 'disabled-card' : ''}`}
+              onClick={() => {
+                if (!planLoaded) {
+                  setCalculationType('advanced');
+                  return;
+                }
+                if (userPlan !== 'Free') setCalculationType('advanced');
+              }}
               style={{ 
-                opacity: userPlan === 'Free' ? 0.6 : 1,
-                cursor: userPlan === 'Free' ? 'not-allowed' : 'pointer'
+                opacity: ((planLoaded && userPlan === 'Free') || (!planLoaded && initialFree)) ? 0.6 : 1,
+                cursor: ((planLoaded && userPlan === 'Free') || (!planLoaded && initialFree)) ? 'not-allowed' : 'pointer'
               }}
             >
               <Card.Body className="text-center">
@@ -2753,13 +3045,19 @@ const CreateDesignSystem = () => {
                   className="card-continue-btn"
                   onClick={(e) => { 
                     e.stopPropagation(); 
+                    if (!planLoaded) {
+                      setCalculationType('advanced');
+                      setShowCalculationTypeSelection(false);
+                      setShowAdvancedLayout(true);
+                      return;
+                    }
                     if (userPlan !== 'Free') {
                       setCalculationType('advanced');
                       setShowCalculationTypeSelection(false);
                       setShowAdvancedLayout(true);
                     }
                   }}
-                  disabled={userPlan === 'Free'}
+                  disabled={(planLoaded && userPlan === 'Free') || (!planLoaded && initialFree)}
                 >
                   <span className="label">Continue</span>
                   <span className="arrow">→</span>
@@ -2783,7 +3081,50 @@ const CreateDesignSystem = () => {
             <div className="d-flex justify-content-between align-items-center mb-3">
               <h4>Advanced Report</h4>
             </div>
+            {/* Modern Tab Navigation - Only show if multiple stages are available */}
+            {(stage7Report || stage8Report) && (
+              <div className="modern-tab-container mb-4">
+                <div className="tab-nav">
+                  <div 
+                    className={`tab-item ${activeReportTab === 'all' ? 'active' : ''}`}
+                    onClick={() => setActiveReportTab('all')}
+                  >
+                    <span className="tab-icon">📊</span>
+                    <span className="tab-label">All Reports</span>
+                  </div>
+                  <div 
+                    className={`tab-item ${activeReportTab === 'stage6' ? 'active' : ''}`}
+                    onClick={() => setActiveReportTab('stage6')}
+                  >
+                    <span className="tab-icon">⚡</span>
+                    <span className="tab-label">Stage 6</span>
+                  </div>
+                  {stage7Report && (
+                    <div 
+                      className={`tab-item ${activeReportTab === 'stage7' ? 'active' : ''}`}
+                      onClick={() => setActiveReportTab('stage7')}
+                    >
+                      <span className="tab-icon">🔧</span>
+                      <span className="tab-label">Stage 7</span>
+                    </div>
+                  )}
+                  {stage8Report && (
+                    <div 
+                      className={`tab-item ${activeReportTab === 'stage8' ? 'active' : ''}`}
+                      onClick={() => setActiveReportTab('stage8')}
+                    >
+                      <span className="tab-icon">⚙️</span>
+                      <span className="tab-label">Stage 8</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+            {(!stage7Report && !stage8Report || activeReportTab === 'all' || activeReportTab === 'stage6') && (
             <div className="report-cards">
+              {/* Stage 6 Title */}
+              <h4 className="mb-4 text-primary">Stage 6: Controlling flow rate</h4>
+
               {/* Stage 1 */}
               <h5 className="mb-3">Stage 1</h5>
               <div className="row g-4 mb-4">
@@ -3002,47 +3343,836 @@ const CreateDesignSystem = () => {
                     </>
                   );
                 })()}
-              </div>
+                </div>
             </div>
+            )}
+              
+              {/* Stage 6 Download Button - Only show in report view and when Stage 6 is visible */}
+              {isAdvancedReportView && (!stage7Report && !stage8Report || activeReportTab === 'all' || activeReportTab === 'stage6') && (
+                <div className="text-center mb-4 mt-4">
+                  <Button 
+                    variant="outline-primary" 
+                    size="sm"
+                    style={{ 
+                      width: '150px', 
+                      borderRadius: '8px', 
+                      height: '30px',
+                      padding: '4px 8px',
+                      lineHeight: '22px',
+                      textAlign: 'center'
+                    }}
+                    onClick={() => {
+                      try {
+                        const doc = generateAdvancedReportPdf(formData, advancedReport, limitingFactor);
+                        const fileName = `Stage6_Report_${formData.designSystemName || 'Design'}_${new Date().toISOString().split('T')[0]}.pdf`;
+                        doc.save(fileName);
+                      } catch (error) {
+                        console.error('Error generating Stage 6 PDF:', error);
+                        alert('Error generating Stage 6 PDF. Please try again.');
+                      }
+                    }}
+                  >
+                    Download Stage 6
+                  </Button>
+                </div>
+              )}
+
+            {/* Stage 7 Report - Bio Filter & Sump Size */}
+            {stage7Report && (activeReportTab === 'all' || activeReportTab === 'stage7') && (
+              <div className="report-cards">
+                {/* Stage 7 Title */}
+                <h4 className="mb-4 text-primary">Stage 7: Bio Filter & Sump Size</h4>
+                
+                <h5 className="mb-3">Bio Filter Parameters</h5>
+                
+                {/* Bio Filter Parameters */}
+                <div className="row g-4 mb-4">
+                  <div className="col-md-6">
+                    <Card className="h-100 shadow-sm bio-filter-card">
+                      <Card.Body>
+                        <Card.Title className="text-primary">Bio Filter Parameters</Card.Title>
+                        <div className="mt-3">
+                          <div className="metric-row"><span className="label">VTR Used</span><strong>{stage7Report.bioVTR_use ?? 0}</strong></div>
+                          <div className="metric-row"><span className="label">VTR Compensation</span><strong>{stage7Report['bio.VTR_compensation'] ?? 0}</strong></div>
+                          <div className="metric-row"><span className="label">Shape</span><strong>{stage7Report['bio.shape'] ?? 'N/A'}</strong></div>
+                          <div className="metric-row"><span className="label">Temperature Used</span><strong>{stage7Report.temperature_used ?? 0}°C</strong></div>
+                          <div className="metric-row"><span className="label">Temp Compensation Factor</span><strong>{stage7Report.temp_compensation_factor ?? 0}</strong></div>
+                        </div>
+                      </Card.Body>
+                    </Card>
+                  </div>
+                  <div className="col-md-6">
+                    <Card className="h-100 shadow-sm sump-card">
+                      <Card.Body>
+                        <Card.Title className="text-primary">System Overview</Card.Title>
+                        <div className="mt-3">
+                          <div className="metric-row"><span className="label">Project ID</span><strong>{stage7Report.project_id ?? 0}</strong></div>
+                          <div className="metric-row"><span className="label">Status</span><strong>{stage7Report.status ?? 'N/A'}</strong></div>
+                          <div className="metric-row"><span className="label">Biofilter Parameters</span><strong>{Object.keys(stage7Report.biofilter_parameters || {}).length} items</strong></div>
+                        </div>
+                      </Card.Body>
+                    </Card>
+                  </div>
+                </div>
+
+                {/* Stage 1, 2, 3 Results */}
+                <div className="row g-4 mb-4">
+                  {/* Stage 1 */}
+                  <div className="col-md-4">
+                    <Card className="h-100 shadow-sm">
+                      <Card.Body>
+                        <Card.Title className="text-success">Stage 1 (Juvenile)</Card.Title>
+                        <div className="mt-3">
+                          {/* Daily TAN Production */}
+                          <h6 className="text-muted mb-2">Daily TAN Production Rate</h6>
+                          <div className="metric-row"><span className="label">Total (g/day)</span><strong>{stage7Report.DailyTAN_gday_Stage1 ?? 0}</strong></div>
+                          <div className="metric-row"><span className="label">After Passive Nitrification (g/day)</span><strong>{stage7Report.DailyTANpassive_gday_Stage1 ?? 0}</strong></div>
+                          
+                          {/* Design VTR */}
+                          <h6 className="text-muted mb-2 mt-3">Design VTR</h6>
+                          <div className="metric-row"><span className="label">Design VTR</span><strong>{stage7Report['design.VTR_Stage1'] ?? 0}</strong></div>
+                          
+                          {/* Media Volume Required */}
+                          <h6 className="text-muted mb-2 mt-3">Media Volume Required</h6>
+                          <div className="metric-row"><span className="label">Media Required (m³)</span><strong>{stage7Report['biomedia.Required_Stage1'] ?? 0}</strong></div>
+                          
+                          {/* MBBR Volume */}
+                          <h6 className="text-muted mb-2 mt-3">MBBR Volume</h6>
+                          <div className="metric-row"><span className="label">MBBR Volume (m³)</span><strong>{stage7Report['MBBR.vol_Stage1'] ?? 0}</strong></div>
+                          
+                          {/* Round Vessel */}
+                          <h6 className="text-muted mb-2 mt-3">Round Vessel</h6>
+                          <div className="metric-row"><span className="label">Vessel Diameter (m)</span><strong>{stage7Report['MBBR.dia_Stage1'] ?? 0}</strong></div>
+                          <div className="metric-row"><span className="label">Vessel Height (m)</span><strong>{stage7Report['MBBR.high_Stage1'] ?? 0}</strong></div>
+                          
+                          {/* Rectangular Vessel */}
+                          <h6 className="text-muted mb-2 mt-3">Rectangular Vessel</h6>
+                          <div className="metric-row"><span className="label">Vessel Height (m)</span><strong>{stage7Report['MBBR.highRect_Stage1'] ?? 0}</strong></div>
+                          <div className="metric-row"><span className="label">Vessel Width (m)</span><strong>{stage7Report['MBBR.wid_Stage1'] ?? 0}</strong></div>
+                          <div className="metric-row"><span className="label">Vessel Length (m)</span><strong>{stage7Report['MBBR.len_Stage1'] ?? 0}</strong></div>
+                          
+                          {/* Aeration */}
+                          <h6 className="text-muted mb-2 mt-3">Aeration</h6>
+                          <div className="metric-row"><span className="label">Volume Air Required for Mixing (x5 vol)</span><strong>{stage7Report['MBBR.air_Stage1'] ?? 0}</strong></div>
+                          <div className="metric-row"><span className="label">Volume Air Required (with 50% spare capacity)</span><strong>{stage7Report['MBBR.air_Stage1_spare'] ?? 0}</strong></div>
+                          
+                          {/* Sump Sizing */}
+                          <h6 className="text-muted mb-2 mt-3">Sump Sizing</h6>
+                          <div className="metric-row"><span className="label">3 min Full Flow (m³)</span><strong>{stage7Report['sump.Size_3min_Stage1'] ?? 0}</strong></div>
+                          <div className="metric-row"><span className="label">5 min Full Flow (m³)</span><strong>{stage7Report['sump.Size_5min_Stage1'] ?? 0}</strong></div>
+                          <div className="metric-row"><span className="label">Sump Total Volume (m³)</span><strong>{stage7Report['sump.totvol_Stage1'] ?? 0}</strong></div>
+                          <div className="metric-row"><span className="label">Total System Volume (m³)</span><strong>{stage7Report['vol.TotalSyst_Stage1'] ?? 0}</strong></div>
+                        </div>
+                      </Card.Body>
+                    </Card>
+                  </div>
+
+                  {/* Stage 2 */}
+                  <div className="col-md-4">
+                    <Card className="h-100 shadow-sm">
+                      <Card.Body>
+                        <Card.Title className="text-warning">Stage 2 (Fingerling)</Card.Title>
+                        <div className="mt-3">
+                          {/* Daily TAN Production */}
+                          <h6 className="text-muted mb-2">Daily TAN Production Rate</h6>
+                          <div className="metric-row"><span className="label">Total (g/day)</span><strong>{stage7Report.DailyTAN_gday_Stage2 ?? 0}</strong></div>
+                          <div className="metric-row"><span className="label">After Passive Nitrification (g/day)</span><strong>{stage7Report.DailyTANpassive_gday_Stage2 ?? 0}</strong></div>
+                          
+                          {/* Design VTR */}
+                          <h6 className="text-muted mb-2 mt-3">Design VTR</h6>
+                          <div className="metric-row"><span className="label">Design VTR</span><strong>{stage7Report['design.VTR_Stage2'] ?? 0}</strong></div>
+                          
+                          {/* Media Volume Required */}
+                          <h6 className="text-muted mb-2 mt-3">Media Volume Required</h6>
+                          <div className="metric-row"><span className="label">Media Required (m³)</span><strong>{stage7Report['biomedia.Required_Stage2'] ?? 0}</strong></div>
+                          
+                          {/* MBBR Volume */}
+                          <h6 className="text-muted mb-2 mt-3">MBBR Volume</h6>
+                          <div className="metric-row"><span className="label">MBBR Volume (m³)</span><strong>{stage7Report['MBBR.vol_Stage2'] ?? 0}</strong></div>
+                          
+                          {/* Round Vessel */}
+                          <h6 className="text-muted mb-2 mt-3">Round Vessel</h6>
+                          <div className="metric-row"><span className="label">Vessel Diameter (m)</span><strong>{stage7Report['MBBR.dia_Stage2'] ?? 0}</strong></div>
+                          <div className="metric-row"><span className="label">Vessel Height (m)</span><strong>{stage7Report['MBBR.high_Stage2'] ?? 0}</strong></div>
+                          
+                          {/* Rectangular Vessel */}
+                          <h6 className="text-muted mb-2 mt-3">Rectangular Vessel</h6>
+                          <div className="metric-row"><span className="label">Vessel Height (m)</span><strong>{stage7Report['MBBR.highRect_Stage2'] ?? 0}</strong></div>
+                          <div className="metric-row"><span className="label">Vessel Width (m)</span><strong>{stage7Report['MBBR.wid_Stage2'] ?? 0}</strong></div>
+                          <div className="metric-row"><span className="label">Vessel Length (m)</span><strong>{stage7Report['MBBR.len_Stage2'] ?? 0}</strong></div>
+                          
+                          {/* Aeration */}
+                          <h6 className="text-muted mb-2 mt-3">Aeration</h6>
+                          <div className="metric-row"><span className="label">Volume Air Required for Mixing (x5 vol)</span><strong>{stage7Report['MBBR.air_Stage2'] ?? 0}</strong></div>
+                          <div className="metric-row"><span className="label">Volume Air Required (with 50% spare capacity)</span><strong>{stage7Report['MBBR.air_Stage2_spare'] ?? 0}</strong></div>
+                          
+                          {/* Sump Sizing */}
+                          <h6 className="text-muted mb-2 mt-3">Sump Sizing</h6>
+                          <div className="metric-row"><span className="label">3 min Full Flow (m³)</span><strong>{stage7Report['sump.Size_3min_Stage2'] ?? 0}</strong></div>
+                          <div className="metric-row"><span className="label">5 min Full Flow (m³)</span><strong>{stage7Report['sump.Size_5min_Stage2'] ?? 0}</strong></div>
+                          <div className="metric-row"><span className="label">Sump Total Volume (m³)</span><strong>{stage7Report['sump.totvol_Stage2'] ?? 0}</strong></div>
+                          <div className="metric-row"><span className="label">Total System Volume (m³)</span><strong>{stage7Report['vol.TotalSyst_Stage2'] ?? 0}</strong></div>
+                        </div>
+                      </Card.Body>
+                    </Card>
+                  </div>
+
+                  {/* Stage 3 */}
+                  <div className="col-md-4">
+                    <Card className="h-100 shadow-sm">
+                      <Card.Body>
+                        <Card.Title className="text-danger">Stage 3 (Growout)</Card.Title>
+                        <div className="mt-3">
+                          {/* Daily TAN Production */}
+                          <h6 className="text-muted mb-2">Daily TAN Production Rate</h6>
+                          <div className="metric-row"><span className="label">Total (g/day)</span><strong>{stage7Report.DailyTAN_gday_Stage3 ?? 0}</strong></div>
+                          <div className="metric-row"><span className="label">After Passive Nitrification (g/day)</span><strong>{stage7Report.DailyTANpassive_gday_Stage3 ?? 0}</strong></div>
+                          
+                          {/* Design VTR */}
+                          <h6 className="text-muted mb-2 mt-3">Design VTR</h6>
+                          <div className="metric-row"><span className="label">Design VTR</span><strong>{stage7Report['design.VTR_Stage3'] ?? 0}</strong></div>
+                          
+                          {/* Media Volume Required */}
+                          <h6 className="text-muted mb-2 mt-3">Media Volume Required</h6>
+                          <div className="metric-row"><span className="label">Media Required (m³)</span><strong>{stage7Report['biomedia.Required_Stage3'] ?? 0}</strong></div>
+                          
+                          {/* MBBR Volume */}
+                          <h6 className="text-muted mb-2 mt-3">MBBR Volume</h6>
+                          <div className="metric-row"><span className="label">MBBR Volume (m³)</span><strong>{stage7Report['MBBR.vol_Stage3'] ?? 0}</strong></div>
+                          
+                          {/* Round Vessel */}
+                          <h6 className="text-muted mb-2 mt-3">Round Vessel</h6>
+                          <div className="metric-row"><span className="label">Vessel Diameter (m)</span><strong>{stage7Report['MBBR.dia_Stage3'] ?? 0}</strong></div>
+                          <div className="metric-row"><span className="label">Vessel Height (m)</span><strong>{stage7Report['MBBR.high_Stage3'] ?? 0}</strong></div>
+                          
+                          {/* Rectangular Vessel */}
+                          <h6 className="text-muted mb-2 mt-3">Rectangular Vessel</h6>
+                          <div className="metric-row"><span className="label">Vessel Height (m)</span><strong>{stage7Report['MBBR.highRect_Stage3'] ?? 0}</strong></div>
+                          <div className="metric-row"><span className="label">Vessel Width (m)</span><strong>{stage7Report['MBBR.wid_Stage3'] ?? 0}</strong></div>
+                          <div className="metric-row"><span className="label">Vessel Length (m)</span><strong>{stage7Report['MBBR.len_Stage3'] ?? 0}</strong></div>
+                          
+                          {/* Aeration */}
+                          <h6 className="text-muted mb-2 mt-3">Aeration</h6>
+                          <div className="metric-row"><span className="label">Volume Air Required for Mixing (x5 vol)</span><strong>{stage7Report['MBBR.air_Stage3'] ?? 0}</strong></div>
+                          <div className="metric-row"><span className="label">Volume Air Required (with 50% spare capacity)</span><strong>{stage7Report['MBBR.air_Stage3_spare'] ?? 0}</strong></div>
+                          
+                          {/* Sump Sizing */}
+                          <h6 className="text-muted mb-2 mt-3">Sump Sizing</h6>
+                          <div className="metric-row"><span className="label">3 min Full Flow (m³)</span><strong>{stage7Report['sump.Size_3min_Stage3'] ?? 0}</strong></div>
+                          <div className="metric-row"><span className="label">5 min Full Flow (m³)</span><strong>{stage7Report['sump.Size_5min_Stage3'] ?? 0}</strong></div>
+                          <div className="metric-row"><span className="label">Sump Total Volume (m³)</span><strong>{stage7Report['sump.totvol_Stage3'] ?? 0}</strong></div>
+                          <div className="metric-row"><span className="label">Total System Volume (m³)</span><strong>{stage7Report['vol.TotalSyst_Stage3'] ?? 0}</strong></div>
+                        </div>
+                      </Card.Body>
+                    </Card>
+                  </div>
+                </div>
+                {/* Stage 7 Download Button */}
+                <div className="text-center mb-4">
+                  <Button 
+                    variant="outline-primary" 
+                    size="sm"
+                    style={{ 
+                      width: '150px', 
+                      borderRadius: '8px', 
+                      height: '30px',
+                      padding: '0',
+                      lineHeight: '30px',
+                      textAlign: 'center'
+                    }}
+                    onClick={() => {
+                      try {
+                        const doc = generateStage7ReportPdf(formData, stage7Report);
+                        const fileName = `Stage7_Report_${formData.designSystemName || 'Design'}_${new Date().toISOString().split('T')[0]}.pdf`;
+                        doc.save(fileName);
+                      } catch (error) {
+                        console.error('Error generating Stage 7 PDF:', error);
+                        alert('Error generating Stage 7 PDF. Please try again.');
+                      }
+                    }}
+                  >
+                    Download Stage 7
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {/* Stage 8 Report - Basic Pump Size */}
+            {stage8Report && (activeReportTab === 'all' || activeReportTab === 'stage8') && (
+              <div className="report-cards">
+                <h5 className="mb-3">Stage 8: Basic Pump Size</h5>
+                
+                {/* Stage 1 */}
+                <div className="mb-4">
+                  <h6 className="text-primary mb-3">Stage 1</h6>
+                  <div className="row g-3">
+                    <div className="col-12">
+                      <Card className="h-100 shadow-sm">
+                        <Card.Body>
+                          <Card.Title className="text-primary">Stage 1 Parameters</Card.Title>
+                          <div className="mt-3">
+                            <div className="metric-row"><span className="label">Limiting Flow Rate</span><strong>{stage8Report?.stage1?.limitingFlowRateStage1 ?? 0}</strong></div>
+                            <div className="metric-row"><span className="label">Q_l.s_Stage1</span><strong>{stage8Report?.stage1?.Q_l_s_Stage1 ?? 0}</strong></div>
+                            <div className="metric-row"><span className="label">Total Dynamic Head Pressure</span><strong>{stage8Report?.stage1?.pump_Head_Stage1 ?? 0}</strong></div>
+                            <div className="metric-row"><span className="label">Pump Efficiency</span><strong>{stage8Report?.stage1?.n_Pump_Stage1 ?? 0}</strong></div>
+                            <div className="metric-row"><span className="label">Motor Efficiency</span><strong>{stage8Report?.stage1?.n_Motor_Stage1 ?? 0}</strong></div>
+                            <div className="metric-row"><span className="label">Hydraulic Power</span><strong>{stage8Report?.stage1?.pump_HydPower_Stage1 ?? 0}</strong></div>
+                            <div className="metric-row"><span className="label">Required Shaft Power</span><strong>{stage8Report?.stage1?.pump_PowerkW_Stage1 ?? 0}</strong></div>
+                          </div>
+                        </Card.Body>
+                      </Card>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Stage 2 */}
+                <div className="mb-4">
+                  <h6 className="text-primary mb-3">Stage 2</h6>
+                  <div className="row g-3">
+                    <div className="col-12">
+                      <Card className="h-100 shadow-sm">
+                        <Card.Body>
+                          <Card.Title className="text-primary">Stage 2 Parameters</Card.Title>
+                          <div className="mt-3">
+                            <div className="metric-row"><span className="label">Limiting Flow Rate</span><strong>{stage8Report?.stage2?.limitingFlowRateStage2 ?? 0}</strong></div>
+                            <div className="metric-row"><span className="label">Q_l.s_Stage2</span><strong>{stage8Report?.stage2?.Q_l_s_Stage2 ?? 0}</strong></div>
+                            <div className="metric-row"><span className="label">Total Dynamic Head Pressure</span><strong>{stage8Report?.stage2?.pump_Head_Stage2 ?? 0}</strong></div>
+                            <div className="metric-row"><span className="label">Pump Efficiency</span><strong>{stage8Report?.stage2?.n_Pump_Stage2 ?? 0}</strong></div>
+                            <div className="metric-row"><span className="label">Motor Efficiency</span><strong>{stage8Report?.stage2?.n_Motor_Stage2 ?? 0}</strong></div>
+                            <div className="metric-row"><span className="label">Hydraulic Power</span><strong>{stage8Report?.stage2?.pump_HydPower_Stage2 ?? 0}</strong></div>
+                            <div className="metric-row"><span className="label">Required Shaft Power</span><strong>{stage8Report?.stage2?.pump_PowerkW_Stage2 ?? 0}</strong></div>
+                          </div>
+                        </Card.Body>
+                      </Card>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Stage 3 */}
+                <div className="mb-4">
+                  <h6 className="text-primary mb-3">Stage 3</h6>
+                  <div className="row g-3">
+                    <div className="col-12">
+                      <Card className="h-100 shadow-sm">
+                        <Card.Body>
+                          <Card.Title className="text-primary">Stage 3 Parameters</Card.Title>
+                          <div className="mt-3">
+                            <div className="metric-row"><span className="label">Limiting Flow Rate</span><strong>{stage8Report?.stage3?.limitingFlowRateStage3 ?? 0}</strong></div>
+                            <div className="metric-row"><span className="label">Q_l.s_Stage3</span><strong>{stage8Report?.stage3?.Q_l_s_Stage3 ?? 0}</strong></div>
+                            <div className="metric-row"><span className="label">Total Dynamic Head Pressure</span><strong>{stage8Report?.stage3?.pump_Head_Stage3 ?? 0}</strong></div>
+                            <div className="metric-row"><span className="label">Pump Efficiency</span><strong>{stage8Report?.stage3?.n_Pump_Stage3 ?? 0}</strong></div>
+                            <div className="metric-row"><span className="label">Motor Efficiency</span><strong>{stage8Report?.stage3?.n_Motor_Stage3 ?? 0}</strong></div>
+                            <div className="metric-row"><span className="label">Hydraulic Power</span><strong>{stage8Report?.stage3?.pump_HydPower_Stage3 ?? 0}</strong></div>
+                            <div className="metric-row"><span className="label">Required Shaft Power</span><strong>{stage8Report?.stage3?.pump_PowerkW_Stage3 ?? 0}</strong></div>
+                          </div>
+                        </Card.Body>
+                      </Card>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Stage 8 Download Button */}
+                <div className="text-center mb-4">
+                  <Button 
+                    variant="outline-primary" 
+                    size="sm"
+                    style={{ 
+                      width: '150px', 
+                      borderRadius: '8px', 
+                      height: '30px',
+                      padding: '0',
+                      lineHeight: '30px',
+                      textAlign: 'center'
+                    }}
+                    onClick={() => {
+                      try {
+                        // TODO: Replace with actual Stage 8 PDF generation when ready
+                        console.log('Stage 8 PDF generation - Placeholder');
+                        alert('Stage 8 PDF generation will be available when parameters are ready');
+                      } catch (error) {
+                        console.error('Error generating Stage 8 PDF:', error);
+                        alert('Error generating Stage 8 PDF. Please try again.');
+                      }
+                    }}
+                  >
+                    Download Stage 8
+                  </Button>
+                </div>
+              </div>
+            )}
+
             <div className="navigation-buttons mt-3">
-              <div></div>
-              <div className="button-group-right">
+              <div className="button-group-left">
                 <Button
                   variant="outline-primary"
-                  onClick={() => setIsAdvancedReportView(false)}
-                >
-                  Back
-                </Button>
-                <Button
-                  variant="primary"
-                  onClick={() => navigate('/dashboard')}
-                >
-                  Save & Return to Dashboard
-                </Button>
-                <Button 
-                  variant="primary" 
-                  size="sm"
-                  style={{ 
-                    width: '100px', 
-                    borderRadius: '8px', 
-                    height: '30px',
-                    padding: '0',
-                    lineHeight: '30px',
-                    textAlign: 'center'
-                  }}
                   onClick={() => {
-                    try {
-                      const doc = generateAdvancedReportPdf(formData, advancedReport, limitingFactor);
-                      const fileName = `Advanced_Report_${formData.designSystemName || 'Design'}_${new Date().toISOString().split('T')[0]}.pdf`;
-                      doc.save(fileName);
-                    } catch (error) {
-                      console.error('Error generating PDF:', error);
-                      alert('Error generating PDF. Please try again.');
+                    // Navigate back page by page based on which stages were selected
+                    if (stage7Report) {
+                      // If Stage 7 was calculated, go back to Stage 7 inputs page
+                      setIsAdvancedReportView(false);
+                      setShowStage7Inputs(true);
+                    } else {
+                      // If only Stage 6 was calculated, go back to Stage 6 page
+                      setIsAdvancedReportView(false);
                     }
                   }}
                 >
-                  Download
+                  Back
                 </Button>
+              </div>
+              <div className="button-group-right">
+                <Button
+                  variant="primary"
+                  onClick={() => navigate('/dashboard')}
+                  style={{
+                    padding: '6px 25px'
+                  }}
+                >
+                  Save & Return to Dashboard
+                </Button>
+                {/* Only show Download All Report button if Stage 7 is calculated AND in report view */}
+                {stage7Report && isAdvancedReportView && (
+                  <Button 
+                    variant="primary" 
+                    size="sm"
+                    style={{ 
+                      width: '200px', 
+                      borderRadius: '8px', 
+                      height: '30px',
+                      padding: '6px 32px',
+                      lineHeight: '18px',
+                      textAlign: 'center',
+                      marginLeft: '10px'
+                    }}
+                    onClick={() => {
+                      try {
+                        const doc = generateCompleteAdvancedReportPdf(formData, advancedReport, limitingFactor, stage7Report, stage8Report);
+                        const fileName = `Complete_Report_${formData.designSystemName || 'Design'}_${new Date().toISOString().split('T')[0]}.pdf`;
+                        doc.save(fileName);
+                      } catch (error) {
+                        console.error('Error generating complete PDF:', error);
+                        alert('Error generating complete PDF. Please try again.');
+                      }
+                    }}
+                  >
+                    Download All Report
+                  </Button>
+                )}
+              </div>
+            </div>
+          </div>
+        ) : showStage7Inputs ? (
+          /* Stage 7 Inputs Page */
+          <div className="step-section">
+            <div className="d-flex justify-content-between align-items-center mb-3">
+              <h4>Stage 7: Bio Filter & Sump Size Parameters</h4>
+            </div>
+            
+            {/* Stage 7 Input Fields */}
+            <div className="config-section mb-5">
+              <div className="section-header">
+                <h4><i className="bi bi-filter text-primary me-2"></i>Bio Filter & Sump Size Parameters</h4>
+                <p className="text-muted">Configure parameters for bio filter and sump sizing calculations</p>
+              </div>
+              
+              {/* BIOFILTER SIZING */}
+              <h5 className="mt-2 mb-3">BIOFILTER SIZING</h5>
+              <div className="row g-3">
+                <div className="col-md-6 col-lg-4">
+                  <Form.Group>
+                    <Form.Label>MBBR location</Form.Label>
+                    <Form.Select 
+                      name="mbbr_location"
+                      value={stage7FormData.mbbr_location}
+                      onChange={(e) => setStage7FormData(prev => ({...prev, mbbr_location: e.target.value}))}
+                    >
+                      <option value="Integrated">Integrated</option>
+                      <option value="Standalone">Standalone</option>
+                    </Form.Select>
+                  </Form.Group>
+                </div>
+                <div className="col-md-6 col-lg-4">
+                  <Form.Group>
+                    <Form.Label>Media:water volume ratio</Form.Label>
+                    <Form.Control 
+                      type="number" 
+                      step="0.01" 
+                      name="media_to_water_volume_ratio"
+                      placeholder="Media:water volume ratio" 
+                      value={stage7FormData.media_to_water_volume_ratio || ''}
+                      onChange={(e) => setStage7FormData(prev => ({...prev, media_to_water_volume_ratio: parseFloat(e.target.value) || 0}))}
+                    />
+                  </Form.Group>
+                </div>
+                <div className="col-md-6 col-lg-4">
+                  <Form.Group>
+                    <Form.Label>Passive nitrification rate (Stage 1)</Form.Label>
+                    <Form.Control 
+                      type="number" 
+                      step="0.01" 
+                      name="passive_nitrification_rate_stage1_percent"
+                      placeholder="Passive nitrification rate (Stage 1)" 
+                      value={stage7FormData.passive_nitrification_rate_stage1_percent || ''}
+                      onChange={(e) => setStage7FormData(prev => ({...prev, passive_nitrification_rate_stage1_percent: parseFloat(e.target.value) || 0}))}
+                    />
+                  </Form.Group>
+                </div>
+                <div className="col-md-6 col-lg-4">
+                  <Form.Group>
+                    <Form.Label>Passive nitrification rate (Stage 2)</Form.Label>
+                    <Form.Control 
+                      type="number" 
+                      step="0.01" 
+                      name="passive_nitrification_rate_stage2_percent"
+                      placeholder="Passive nitrification rate (Stage 2)" 
+                      value={stage7FormData.passive_nitrification_rate_stage2_percent || ''}
+                      onChange={(e) => setStage7FormData(prev => ({...prev, passive_nitrification_rate_stage2_percent: parseFloat(e.target.value) || 0}))}
+                    />
+                  </Form.Group>
+                </div>
+                <div className="col-md-6 col-lg-4">
+                  <Form.Group>
+                    <Form.Label>Passive nitrification rate (Stage 3)</Form.Label>
+                    <Form.Control 
+                      type="number" 
+                      step="0.01" 
+                      name="passive_nitrification_rate_stage3_percent"
+                      placeholder="Passive nitrification rate (Stage 3)" 
+                      value={stage7FormData.passive_nitrification_rate_stage3_percent || ''}
+                      onChange={(e) => setStage7FormData(prev => ({...prev, passive_nitrification_rate_stage3_percent: parseFloat(e.target.value) || 0}))}
+                    />
+                  </Form.Group>
+                </div>
+                <div className="col-md-6 col-lg-4">
+                  <Form.Group>
+                    <Form.Label>Pump-stop-overflow vol</Form.Label>
+                    <Form.Control 
+                      type="number" 
+                      step="0.01" 
+                      name="pump_stop_overflow_volume"
+                      placeholder="Pump-stop-overflow vol" 
+                      value={stage7FormData.pump_stop_overflow_volume || ''}
+                      onChange={(e) => setStage7FormData(prev => ({...prev, pump_stop_overflow_volume: parseFloat(e.target.value) || 0}))}
+                    />
+                  </Form.Group>
+                </div>
+                <div className="col-md-6 col-lg-4">
+                  <Form.Group>
+                    <Form.Label>Height-diameter ratio of cylindrical tank</Form.Label>
+                    <Form.Control 
+                      type="number" 
+                      step="0.01" 
+                      name="standalone_height_diameter_ratio"
+                      placeholder="Height-diameter ratio of cylindrical tank" 
+                      value={stage7FormData.standalone_height_diameter_ratio || ''}
+                      onChange={(e) => setStage7FormData(prev => ({...prev, standalone_height_diameter_ratio: parseFloat(e.target.value) || 0}))}
+                    />
+                  </Form.Group>
+                </div>
+                <div className="col-md-6 col-lg-4">
+                  <Form.Group>
+                    <Form.Label>Volumetric nitrification rate (VTR; Leave blank if unknown)</Form.Label>
+                    <Form.Control 
+                      type="number" 
+                      step="0.01" 
+                      name="volumetric_nitrification_rate_vtr"
+                      placeholder="Volumetric nitrification rate (VTR)" 
+                      value={stage7FormData.volumetric_nitrification_rate_vtr || ''}
+                      onChange={(e) => setStage7FormData(prev => ({...prev, volumetric_nitrification_rate_vtr: parseFloat(e.target.value) || 0}))}
+                    />
+                  </Form.Group>
+                </div>
+              </div>
+
+              {/* TANK DESIGN */}
+              <h5 className="mt-4 mb-3">TANK DESIGN</h5>
+              
+              {/* Stage 1 Tank Design */}
+              <h6 className="mt-3 mb-2">Stage 1</h6>
+              <div className="row g-3">
+                <div className="col-md-6 col-lg-4">
+                  <Form.Group>
+                    <Form.Label>Number of tanks (Stage 1)</Form.Label>
+                    <Form.Control 
+                      type="number" 
+                      name="num_tanks_stage1"
+                      placeholder="Number of tanks (Stage 1)" 
+                      value={stage7FormData.num_tanks_stage1 || ''}
+                      onChange={(e) => setStage7FormData(prev => ({...prev, num_tanks_stage1: parseInt(e.target.value) || 0}))}
+                    />
+                  </Form.Group>
+                </div>
+                <div className="col-md-6 col-lg-4">
+                  <Form.Group>
+                    <Form.Label>Tank diameter:depth ratio (Stage 1)</Form.Label>
+                    <Form.Control 
+                      type="number" 
+                      step="0.01" 
+                      name="tank_dd_ratio_stage1"
+                      placeholder="Tank diameter:depth ratio (Stage 1)" 
+                      value={stage7FormData.tank_dd_ratio_stage1 || ''}
+                      onChange={(e) => setStage7FormData(prev => ({...prev, tank_dd_ratio_stage1: parseFloat(e.target.value) || 0}))}
+                    />
+                  </Form.Group>
+                </div>
+                <div className="col-md-6 col-lg-4">
+                  <Form.Group>
+                    <Form.Label>Tank freeboard (Stage 1)</Form.Label>
+                    <Form.Control 
+                      type="number" 
+                      step="0.01" 
+                      name="tank_freeboard_stage1"
+                      placeholder="Tank freeboard (Stage 1)" 
+                      value={stage7FormData.tank_freeboard_stage1 || ''}
+                      onChange={(e) => setStage7FormData(prev => ({...prev, tank_freeboard_stage1: parseFloat(e.target.value) || 0}))}
+                    />
+                  </Form.Group>
+                </div>
+              </div>
+
+              {/* Stage 2 Tank Design */}
+              <h6 className="mt-3 mb-2">Stage 2</h6>
+              <div className="row g-3">
+                <div className="col-md-6 col-lg-4">
+                  <Form.Group>
+                    <Form.Label>Number of tanks (Stage 2)</Form.Label>
+                    <Form.Control 
+                      type="number" 
+                      name="num_tanks_stage2"
+                      placeholder="Number of tanks (Stage 2)" 
+                      value={stage7FormData.num_tanks_stage2 || ''}
+                      onChange={(e) => setStage7FormData(prev => ({...prev, num_tanks_stage2: parseInt(e.target.value) || 0}))}
+                    />
+                  </Form.Group>
+                </div>
+                <div className="col-md-6 col-lg-4">
+                  <Form.Group>
+                    <Form.Label>Tank diameter:depth ratio (Stage 2)</Form.Label>
+                    <Form.Control 
+                      type="number" 
+                      step="0.01" 
+                      name="tank_dd_ratio_stage2"
+                      placeholder="Tank diameter:depth ratio (Stage 2)" 
+                      value={stage7FormData.tank_dd_ratio_stage2 || ''}
+                      onChange={(e) => setStage7FormData(prev => ({...prev, tank_dd_ratio_stage2: parseFloat(e.target.value) || 0}))}
+                    />
+                  </Form.Group>
+                </div>
+                <div className="col-md-6 col-lg-4">
+                  <Form.Group>
+                    <Form.Label>Tank freeboard (Stage 2)</Form.Label>
+                    <Form.Control 
+                      type="number" 
+                      step="0.01" 
+                      name="tank_freeboard_stage2"
+                      placeholder="Tank freeboard (Stage 2)" 
+                      value={stage7FormData.tank_freeboard_stage2 || ''}
+                      onChange={(e) => setStage7FormData(prev => ({...prev, tank_freeboard_stage2: parseFloat(e.target.value) || 0}))}
+                    />
+                  </Form.Group>
+                </div>
+              </div>
+
+              {/* Stage 3 Tank Design */}
+              <h6 className="mt-3 mb-2">Stage 3</h6>
+              <div className="row g-3">
+                <div className="col-md-6 col-lg-4">
+                  <Form.Group>
+                    <Form.Label>Number of tanks (Stage 3)</Form.Label>
+                    <Form.Control 
+                      type="number" 
+                      name="num_tanks_stage3"
+                      placeholder="Number of tanks (Stage 3)" 
+                      value={stage7FormData.num_tanks_stage3 || ''}
+                      onChange={(e) => setStage7FormData(prev => ({...prev, num_tanks_stage3: parseInt(e.target.value) || 0}))}
+                    />
+                  </Form.Group>
+                </div>
+                <div className="col-md-6 col-lg-4">
+                  <Form.Group>
+                    <Form.Label>Tank diameter:depth ratio (Stage 3)</Form.Label>
+                    <Form.Control 
+                      type="number" 
+                      step="0.01" 
+                      name="tank_dd_ratio_stage3"
+                      placeholder="Tank diameter:depth ratio (Stage 3)" 
+                      value={stage7FormData.tank_dd_ratio_stage3 || ''}
+                      onChange={(e) => setStage7FormData(prev => ({...prev, tank_dd_ratio_stage3: parseFloat(e.target.value) || 0}))}
+                    />
+                  </Form.Group>
+                </div>
+                <div className="col-md-6 col-lg-4">
+                  <Form.Group>
+                    <Form.Label>Tank freeboard (Stage 3)</Form.Label>
+                    <Form.Control 
+                      type="number" 
+                      step="0.01" 
+                      name="tank_freeboard_stage3"
+                      placeholder="Tank freeboard (Stage 3)" 
+                      value={stage7FormData.tank_freeboard_stage3 || ''}
+                      onChange={(e) => setStage7FormData(prev => ({...prev, tank_freeboard_stage3: parseFloat(e.target.value) || 0}))}
+                    />
+                  </Form.Group>
+                </div>
+              </div>
+            </div>
+
+            {/* Stage 8 Selection */}
+            <div className="config-section mb-4">
+              <div className="section-header">
+                <h4><i className="bi bi-gear text-primary me-2"></i>Additional Calculations</h4>
+                <p className="text-muted">Select additional calculation stages</p>
+              </div>
+              
+              <div className="row">
+                <div className="col-12">
+                  <div className="stage-option-card">
+                    <div className="stage-checkbox">
+                      <Form.Check
+                        type="checkbox"
+                        id="stage8-checkbox"
+                        checked={stage8Selected}
+                        onChange={(e) => setStage8Selected(e.target.checked)}
+                        className="form-check-input"
+                      />
+                      <Form.Check.Label htmlFor="stage8-checkbox" className="form-check-label">
+                        Stage 8: Basic Pump Size Calculation
+                      </Form.Check.Label>
+                    </div>
+                    <p className="text-muted mt-2 mb-0">
+                      Calculate basic pump sizing parameters including flow rate, head pressure, and power requirements.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Stage 7 Calculate Button */}
+            <div className="calculate-section">
+              {error && (
+                <div className="alert alert-danger" role="alert">
+                  {error}
+                </div>
+              )}
+              <div className="navigation-buttons">
+                <div className="button-group-left">
+                  <Button
+                    variant="outline-secondary"
+                    size="sm"
+                    style={{ width: '100px' }}
+                    onClick={() => {
+                      setShowStage7Inputs(false);
+                      setStage7Selected(false); // Reset Stage 7 selection when going back
+                    }}
+                    disabled={loading}
+                  >
+                    Back
+                  </Button>
+                </div>
+                <div className="button-group-right">
+                  <Button
+                    variant="primary"
+                    onClick={async () => {
+                      console.log('🚀 Stage 7 Calculate button clicked!');
+                      try {
+                        setLoading(true);
+                        setError('');
+                        
+                        console.log('🔍 Checking for project ID...');
+                        const currentProjectId = localStorage.getItem('currentProjectId');
+                        console.log('🔍 Project ID found:', currentProjectId);
+                        
+                        if (!currentProjectId) {
+                          throw new Error('Project ID not found. Please complete Initial Setup first.');
+                        }
+
+                        // Prepare Stage 7 payload with actual form data
+                        const stage7Payload = {
+                          mbbr_location: stage7FormData.mbbr_location,
+                          media_to_water_volume_ratio: stage7FormData.media_to_water_volume_ratio,
+                          num_tanks_stage1: stage7FormData.num_tanks_stage1,
+                          num_tanks_stage2: stage7FormData.num_tanks_stage2,
+                          num_tanks_stage3: stage7FormData.num_tanks_stage3,
+                          passive_nitrification_rate_stage1_percent: stage7FormData.passive_nitrification_rate_stage1_percent,
+                          passive_nitrification_rate_stage2_percent: stage7FormData.passive_nitrification_rate_stage2_percent,
+                          passive_nitrification_rate_stage3_percent: stage7FormData.passive_nitrification_rate_stage3_percent,
+                          pump_stop_overflow_volume: stage7FormData.pump_stop_overflow_volume,
+                          standalone_height_diameter_ratio: stage7FormData.standalone_height_diameter_ratio,
+                          tank_dd_ratio_stage1: stage7FormData.tank_dd_ratio_stage1,
+                          tank_dd_ratio_stage2: stage7FormData.tank_dd_ratio_stage2,
+                          tank_dd_ratio_stage3: stage7FormData.tank_dd_ratio_stage3,
+                          tank_freeboard_stage1: stage7FormData.tank_freeboard_stage1,
+                          tank_freeboard_stage2: stage7FormData.tank_freeboard_stage2,
+                          tank_freeboard_stage3: stage7FormData.tank_freeboard_stage3,
+                          volumetric_nitrification_rate_vtr: stage7FormData.volumetric_nitrification_rate_vtr
+                        };
+
+                        // Call Stage 7 POST API
+                        let stage7Data = null;
+                        try {
+                          console.log('📊 Calling Stage 7 POST API with payload:', stage7Payload);
+                          const postResult = await postStage7Parameters(currentProjectId, stage7Payload);
+                          console.log('✅ Stage 7 POST Result:', postResult);
+                          
+                          if (postResult.status === 'success') {
+                            // Get Stage 7 results from real API
+                            const stage7Results = await getStage7Results(currentProjectId);
+                            if (stage7Results.status === 'success') {
+                              stage7Data = stage7Results.data;
+                              console.log('✅ Stage 7 Results:', stage7Data);
+                            } else {
+                              throw new Error(stage7Results.message || 'Stage 7 results API call failed');
+                            }
+                          } else {
+                            throw new Error(postResult.message || 'Stage 7 API call failed');
+                          }
+                        } catch (stage7Err) {
+                          console.warn('Stage 7 API error:', stage7Err);
+                          // For now, still show placeholder data
+                          stage7Data = await getStage7Results(currentProjectId);
+                        }
+
+                        // Check if Stage 8 is selected
+                        let stage8Data = null;
+                        if (stage8Selected) {
+                          try {
+                            console.log('📊 Calling Stage 8 GET API...');
+                            const stage8Results = await getStage8Results(currentProjectId);
+                            if (stage8Results.status === 'success') {
+                              stage8Data = stage8Results.data;
+                              console.log('✅ Stage 8 Results:', stage8Data);
+                            } else {
+                              throw new Error(stage8Results.message || 'Stage 8 results API call failed');
+                            }
+                          } catch (stage8Err) {
+                            console.warn('Stage 8 API error:', stage8Err);
+                            // For now, still show placeholder data
+                            stage8Data = await getStage8Results(currentProjectId);
+                          }
+                        }
+
+                        // Show reports with Stage 6, Stage 7, and Stage 8 (if selected)
+                        setStage7Report(stage7Data);
+                        if (stage8Data) {
+                          setStage8Report(stage8Data);
+                        }
+                        setShowStage7Inputs(false);
+                        setIsAdvancedReportView(true);
+                        
+                      } catch (err) {
+                        console.error('❌ Error in Stage 7 Calculation:', err);
+                        console.error('❌ Error details:', err.message, err.stack);
+                        setError(err.message);
+                      } finally {
+                        console.log('🏁 Stage 7 calculation process finished');
+                        setLoading(false);
+                      }
+                    }}
+                    disabled={loading}
+                  >
+                    {loading ? 'Calculating...' : 'Calculate Advanced Report'}
+                  </Button>
+                </div>
               </div>
             </div>
           </div>

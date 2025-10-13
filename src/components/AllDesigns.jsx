@@ -68,7 +68,12 @@ const AllDesigns = () => {
                   </div>
                 </div>
                 <div className="card-cta-br">
-                  <span className="eye-btn" title="View details" aria-label="View details" onClick={() => navigate(`/design-systems/${system.id}`)}>
+                  <span 
+                    className="eye-btn" 
+                    title="View design projects" 
+                    aria-label="View design projects" 
+                    onClick={() => navigate(`/design-projects/${system.id}`)}
+                  >
                     <i className="bi bi-eye"></i>
                   </span>
                 </div>

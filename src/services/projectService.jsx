@@ -17,7 +17,8 @@ export const getAllProjects = async () => {
     controller = new AbortController();
     timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
 
-    const response = await fetch(`${API_URL}/designs`, {
+    // Try to fetch from /projects endpoint first (which should include type field)
+    let response = await fetch(`${API_URL}/projects`, {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -26,13 +27,32 @@ export const getAllProjects = async () => {
       signal: controller.signal
     });
 
+    // If /projects endpoint doesn't exist, fallback to /designs
     if (!response.ok) {
-      throw new Error(`Failed to fetch designs: ${response.status}`);
+      console.log('Projects endpoint not available, falling back to designs endpoint');
+      response = await fetch(`${API_URL}/designs`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Accept': 'application/json'
+        },
+        signal: controller.signal
+      });
+    }
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch projects: ${response.status}`);
     }
 
     const data = await response.json();
-    console.log('Designs API response:', data);
+    console.log('Projects API response:', data);
 
+    // Handle /projects endpoint response
+    if (Array.isArray(data)) {
+      return data.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+    }
+    
+    // Handle /designs endpoint response (fallback)
     if (data && Array.isArray(data.designs)) {
       // First collect all projects
       const allProjects = data.designs

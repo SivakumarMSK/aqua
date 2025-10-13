@@ -234,15 +234,15 @@ const AllProjects = () => {
     }
   };
 
-  // Handle advanced project click - use step6results and limiting factor APIs
+  // Handle advanced project click - use step6results, limiting factor, stage7, and stage8 APIs
   const handleAdvancedProjectClick = async (project) => {
     try {
       setLoading(true);
       
       const token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
       
-      // Call both advanced APIs
-      const [step6Response, limitingFactorResponse] = await Promise.all([
+      // Call all advanced APIs simultaneously
+      const [step6Response, limitingFactorResponse, stage7Response, stage8Response] = await Promise.all([
         fetch(`/backend/advanced/formulas/api/projects/${project.id}/step_6_results`, {
           method: 'GET',
           headers: {
@@ -256,9 +256,24 @@ const AllProjects = () => {
             'Authorization': `Bearer ${token}`,
             'Accept': 'application/json'
           }
+        }),
+        fetch(`/backend/advanced/formulas/api/projects/${project.id}/step7`, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Accept': 'application/json'
+          }
+        }),
+        fetch(`/backend/advanced/formulas/api/projects/${project.id}/step8`, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Accept': 'application/json'
+          }
         })
       ]);
 
+      // Handle Stage 6 and Limiting Factor (required)
       if (!step6Response.ok) {
         throw new Error(`Failed to fetch step6 results: ${step6Response.status}`);
       }
@@ -272,10 +287,30 @@ const AllProjects = () => {
       console.log('Advanced step6 API response:', step6Data);
       console.log('Advanced limiting factor API response:', limitingFactorData);
 
+      // Handle Stage 7 and Stage 8 (optional - may not exist for all projects)
+      let stage7Data = null;
+      let stage8Data = null;
+      
+      if (stage7Response.ok) {
+        stage7Data = await stage7Response.json();
+        console.log('Advanced stage7 API response:', stage7Data);
+      } else {
+        console.log('Stage 7 data not available for this project');
+      }
+      
+      if (stage8Response.ok) {
+        stage8Data = await stage8Response.json();
+        console.log('Advanced stage8 API response:', stage8Data);
+      } else {
+        console.log('Stage 8 data not available for this project');
+      }
+
       // Map API response to our expected format
       const outputs = {
         step6Results: step6Data,
         limitingFactor: limitingFactorData,
+        stage7Results: stage7Data,
+        stage8Results: stage8Data,
         // Add any other advanced-specific data mapping here
       };
 

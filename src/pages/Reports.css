@@ -1,5 +1,122 @@
 /* Professional responsive ordering for Reports filters */
 
+/* Fix dropdown z-index issues - Bootstrap specific */
+.dropdown-menu {
+  z-index: 9999 !important;
+  position: absolute !important;
+}
+
+.dropdown {
+  position: relative;
+  z-index: 1000;
+}
+
+.item-card {
+  position: relative;
+  z-index: 1;
+  overflow: visible !important;
+}
+
+/* Ensure card body doesn't clip dropdown */
+.item-card .card-body {
+  overflow: visible !important;
+}
+
+.item-card .card {
+  overflow: visible !important;
+}
+
+/* Ensure all card containers allow overflow */
+.item-card .card,
+.item-card .card-body,
+.item-card .card-footer,
+.item-card .card-header {
+  overflow: visible !important;
+}
+
+/* Ensure the entire card structure doesn't clip */
+.item-card * {
+  overflow: visible !important;
+}
+
+.item-card:hover {
+  z-index: 2;
+}
+
+/* When dropdown is open, keep the card on top */
+.item-card.dropdown-open {
+  z-index: 1000 !important;
+}
+
+.card-actions {
+  position: relative;
+  z-index: 1000;
+  overflow: visible !important;
+}
+
+.card-actions .dropdown {
+  z-index: 1000;
+  overflow: visible !important;
+}
+
+.card-actions .dropdown-menu {
+  z-index: 9999 !important;
+  position: absolute !important;
+  top: 100% !important;
+  left: 0 !important;
+  right: auto !important;
+  transform: none !important;
+  overflow: visible !important;
+}
+
+/* Bootstrap dropdown specific fixes */
+.dropdown.show .dropdown-menu {
+  z-index: 9999 !important;
+  display: block !important;
+  position: absolute !important;
+}
+
+.dropdown.show {
+  z-index: 1000;
+}
+
+/* Force dropdown to appear above everything */
+.dropdown-menu.show {
+  z-index: 9999 !important;
+  display: block !important;
+  position: absolute !important;
+}
+
+/* Additional Bootstrap dropdown fixes */
+.dropdown-toggle::after {
+  display: none;
+}
+
+.dropdown-menu {
+  min-width: 200px;
+  box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+  border: 1px solid rgba(0, 0, 0, 0.15);
+  border-radius: 0.375rem;
+}
+
+/* Ensure dropdown menu is always on top when visible */
+.dropdown-menu[style*="display: block"] {
+  z-index: 9999 !important;
+  position: absolute !important;
+}
+
+/* Override any Bootstrap positioning issues */
+.dropdown-menu.dropdown-menu-end {
+  z-index: 9999 !important;
+  position: absolute !important;
+}
+
+/* Force all dropdowns to use absolute positioning */
+.dropdown-menu {
+  position: absolute !important;
+  z-index: 9999 !important;
+}
+
 /* Base layout polishing */
 .report-type-buttons {
   justify-content: center;
@@ -56,6 +173,92 @@
   .filter-sort-group input[type="date"] { order: 1; width: 100%; }
   .filter-sort-group .filter-select { order: 3; width: 100%; }
   .filter-sort-group .sort-select { order: 4; width: 100%; }
+}
+
+/* Delete button styling */
+.card-actions .btn-outline-danger {
+  border-color: #dc3545;
+  color: #dc3545;
+}
+
+.card-actions .btn-outline-danger:hover {
+  background-color: #dc3545;
+  border-color: #dc3545;
+  color: white;
+}
+
+.card-actions .btn-outline-danger:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* SweetAlert2 Custom Styling */
+.swal2-popup-custom {
+  border-radius: 12px !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2) !important;
+  border: 1px solid #e9ecef !important;
+}
+
+.swal2-title-custom {
+  color: #2c3e50 !important;
+  font-weight: 600 !important;
+  font-size: 1.5rem !important;
+}
+
+.swal2-content-custom {
+  color: #6c757d !important;
+  font-size: 1rem !important;
+  line-height: 1.5 !important;
+}
+
+.swal2-confirm-custom {
+  background-color: #dc3545 !important;
+  border: none !important;
+  border-radius: 8px !important;
+  padding: 10px 20px !important;
+  font-weight: 500 !important;
+  font-size: 0.9rem !important;
+  transition: all 0.3s ease !important;
+}
+
+.swal2-confirm-custom:hover {
+  background-color: #c82333 !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 4px 12px rgba(220, 53, 69, 0.3) !important;
+}
+
+.swal2-cancel-custom {
+  background-color: #6c757d !important;
+  border: none !important;
+  border-radius: 8px !important;
+  padding: 10px 20px !important;
+  font-weight: 500 !important;
+  font-size: 0.9rem !important;
+  transition: all 0.3s ease !important;
+}
+
+.swal2-cancel-custom:hover {
+  background-color: #5a6268 !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 4px 12px rgba(108, 117, 125, 0.3) !important;
+}
+
+/* Success alert styling */
+.swal2-success .swal2-success-ring {
+  border-color: #28a745 !important;
+}
+
+.swal2-success [class^=swal2-success-line] {
+  background-color: #28a745 !important;
+}
+
+/* Error alert styling */
+.swal2-error [class^=swal2-x-mark-line] {
+  background-color: #dc3545 !important;
+}
+
+.swal2-error .swal2-x-mark {
+  border-color: #dc3545 !important;
 }
 
 
