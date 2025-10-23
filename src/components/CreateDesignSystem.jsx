@@ -595,6 +595,7 @@ const CreateDesignSystem = () => {
         setCalculationType('advanced');
         setShowCalculationTypeSelection(false);
         setShowAdvancedLayout(true);
+        setShowAdvancedFields(true); // Show advanced fields for update flow
       } else {
         // Default to basic for update flow
         setCalculationType('basic');
@@ -2014,9 +2015,15 @@ const CreateDesignSystem = () => {
       }
 
       // Wait until species was persisted once (best effort)
-      if (!speciesSavedRef.current) {
+      // In update mode, species might already be in the project, so we can try the live call
+      if (!speciesSavedRef.current && !isUpdateFlow) {
         console.warn('[AdvancedLiveCalc] Species not yet persisted to project; attempting persisted live may fail');
         return;
+      }
+      
+      // For update flow, we can try the live call even if species isn't marked as persisted
+      if (!speciesSavedRef.current && isUpdateFlow) {
+        console.log('[AdvancedLiveCalc] Update flow: attempting live call without species persistence check');
       }
 
       // Build payload from current form data
