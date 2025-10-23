@@ -69,7 +69,7 @@ const CombinedInputsPage = ({
                 {renderInputWithTooltip('feedProtein', 'Feed protein content', '%')}
 
                 {renderInputWithTooltip('harvestFrequency', 'Harvest frequency', '', 'text')}
-                {renderInputWithTooltip('initialWeight', 'Initial weight', 'g')}
+                {renderInputWithTooltip('initialWeightWiG', 'Initial weight', 'g')}
 
                 {/* Stage-wise Feed Conversion & Mortality */}
                 <div className="row g-3 mt-2">

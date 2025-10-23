@@ -55,7 +55,7 @@ const InputsDisplay = ({ inputs, showOnlyStage7Specific = false }) => {
                 </div>
                 <div className="parameter-row">
                   <span className="parameter-label">pH Level</span>
-                  <span className="parameter-value">{formatValue(inputs.pH)}</span>
+                  <span className="parameter-value">{formatValue(inputs.ph)}</span>
                 </div>
                 <div className="parameter-row">
                   <span className="parameter-label">Maximum CO₂</span>

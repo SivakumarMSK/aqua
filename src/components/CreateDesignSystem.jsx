@@ -287,7 +287,7 @@ const CreateDesignSystem = () => {
       salinity: p.salinity ?? 0,
       siteElevation: p.elevation_m ?? 0,
       minDO: p.dissolved_O2_min ?? 6,
-      ph: p.pH ?? 7, // Use pH from API (capital H) but map to lowercase ph
+      ph: p.ph ?? 7, // Use ph from API (lowercase h) and map to lowercase ph
       maxCO2: p.dissolved_CO2_max ?? 10,
       maxTAN: p.TAN_max ?? 1,
       minTSS: p.TSS_max ?? 20, // TSS_max is correct field name
@@ -323,7 +323,7 @@ const CreateDesignSystem = () => {
       salinity: p.salinity ?? 0,
       siteElevation: p.elevation_m ?? 0,
       minDO: p.dissolved_O2_min ?? 6,
-      ph: p.pH ?? 7, // Use pH from API (capital H) but map to lowercase ph
+      ph: p.ph ?? 7, // Use ph from API (lowercase h) and map to lowercase ph
       maxCO2: p.dissolved_CO2_max ?? 10,
       maxTAN: p.TAN_max ?? 1,
       minTSS: p.TSS_max ?? 20, // TSS_max is correct field name
@@ -451,7 +451,7 @@ const CreateDesignSystem = () => {
         const mappedData = {
           // Water quality parameters
           waterTemp: params.temperature?.toString() || '',
-          ph: params.pH?.toString() || '',
+          ph: params.ph?.toString() || '',
           salinity: params.salinity?.toString() || '',
           siteElevation: params.elevation_m?.toString() || '',
           minDO: params.dissolved_O2_min?.toString() || '',
@@ -501,10 +501,20 @@ const CreateDesignSystem = () => {
         };
         
         console.log('Mapped data for form:', mappedData);
+        console.log('Specific field values:', {
+          ph: mappedData.ph,
+          initialWeightWiG: mappedData.initialWeightWiG,
+          phFromParams: params.ph,
+          initialWeightFromParams: params.initial_weight_wi_g
+        });
         console.log('Updating form data with mapped parameters for advanced flow');
         setFormData(prev => {
           const updatedData = { ...prev, ...mappedData };
           console.log('Form data updated with mapped parameters:', updatedData);
+          console.log('Updated specific fields:', {
+            ph: updatedData.ph,
+            initialWeightWiG: updatedData.initialWeightWiG
+          });
           return updatedData;
         });
         
@@ -729,7 +739,7 @@ const CreateDesignSystem = () => {
       },
       production: {
         targetSpecies: formData.targetSpecies,
-        initialWeight: formData.initialWeightWiG || formData.initialWeight,
+        initialWeight: formData.initialWeightWiGWiG || formData.initialWeightWiG,
         juvenileSize: formData.juvenileSize,
         targetFishWeight: formData.targetFishWeight,
         targetNumFish: formData.targetNumFish,
@@ -1142,7 +1152,7 @@ const CreateDesignSystem = () => {
         },
         production: {
           targetSpecies: formData.targetSpecies,
-          initialWeight: formData.initialWeightWiG || formData.initialWeight,
+          initialWeight: formData.initialWeightWiGWiG || formData.initialWeightWiG,
           juvenileSize: formData.juvenileSize,
           targetFishWeight: formData.targetFishWeight,
           targetNumFish: formData.targetNumFish,
@@ -2043,7 +2053,7 @@ const CreateDesignSystem = () => {
         },
         production: {
           targetSpecies: formDataToUse.targetSpecies,
-          initialWeight: formDataToUse.initialWeightWiG || formDataToUse.initialWeight,
+          initialWeight: formDataToUse.initialWeightWiGWiG || formDataToUse.initialWeightWiG,
           juvenileSize: formDataToUse.juvenileSize,
           targetFishWeight: formDataToUse.targetFishWeight,
           // Ensure live uses the immediate typed value for target number of fish
@@ -2080,9 +2090,9 @@ const CreateDesignSystem = () => {
       const payload = buildAdvancedLiveInputsPayload(step6Values);
       console.log('[AdvancedLiveCalc] Calling live API with payload:', payload);
       console.log('[AdvancedLiveCalc] Initial weight values:', {
-        initialWeightWiG: formDataToUse.initialWeightWiG,
-        initialWeight: formDataToUse.initialWeight,
-        finalValue: formDataToUse.initialWeightWiG || formDataToUse.initialWeight,
+        initialWeightWiG: formDataToUse.initialWeightWiGWiG,
+        initialWeight: formDataToUse.initialWeightWiG,
+        finalValue: formDataToUse.initialWeightWiGWiG || formDataToUse.initialWeightWiG,
         payloadValue: payload.inputs?.initial_weight_wi_g
       });
       const data = await postLiveProductionCalculations(projectId, payload);
@@ -3050,7 +3060,7 @@ const CreateDesignSystem = () => {
         species: formData.targetSpecies || "Nile tilapia",
         production_target_t: formData.productionTarget_t ? parseFloat(formData.productionTarget_t) : 100,
         harvest_frequency: formData.harvestFrequency || "Fortnightly",
-        initial_weight_wi_g: (formData.initialWeight && formData.initialWeight.toString().trim() !== '') ? parseFloat(formData.initialWeight) : null,
+        initial_weight_wi_g: (formData.initialWeightWiG && formData.initialWeightWiG.toString().trim() !== '') ? parseFloat(formData.initialWeightWiG) : null,
         juvenile_size: (formData.juvenileSize && formData.juvenileSize.toString().trim() !== '') ? parseFloat(formData.juvenileSize) : null,
         target_market_fish_size: (formData.targetFishWeight && formData.targetFishWeight.toString().trim() !== '') ? parseFloat(formData.targetFishWeight) : null,
         feed_protein_percent: (formData.feedProtein && formData.feedProtein.toString().trim() !== '') ? parseFloat(formData.feedProtein) : null,
@@ -3194,7 +3204,7 @@ const CreateDesignSystem = () => {
       tanRemoval: formData.tanRemoval || 0,
       targetSpecies: formData.targetSpecies || '',
       harvestFrequency: formData.harvestFrequency || '',
-      initialWeight: formData.initialWeight || 0,
+      initialWeight: formData.initialWeightWiG || 0,
       juvenileSize: formData.juvenileSize || 0
     };
 
@@ -3446,23 +3456,36 @@ const CreateDesignSystem = () => {
     );
   };
 
-  const renderInputWithTooltip = (name, label, unit = '', type = 'number') => (
-    <Form.Group key={name} className="mb-3">
-      <OverlayTrigger
-        placement="right"
-        overlay={<Tooltip>{label} {unit ? `(${unit})` : ''}</Tooltip>}
-      >
-        <Form.Label>{label} {unit ? <span className="text-muted">({unit})</span> : ''}</Form.Label>
-      </OverlayTrigger>
-      <Form.Control
-        type={type}
-        name={name}
-        value={(formData[name] !== undefined && formData[name] !== null) ? String(formData[name]) : ''}
-        onChange={handleInputChange}
-        // Removed disabled condition - input fields are now always editable
-      />
-    </Form.Group>
-  );
+  const renderInputWithTooltip = (name, label, unit = '', type = 'number') => {
+    // Debug specific fields
+    if (name === 'ph' || name === 'initialWeightWiG') {
+      console.log(`[FormDebug] Rendering ${name}:`, {
+        formDataValue: formData[name],
+        formDataType: typeof formData[name],
+        isUndefined: formData[name] === undefined,
+        isNull: formData[name] === null,
+        finalValue: (formData[name] !== undefined && formData[name] !== null) ? String(formData[name]) : ''
+      });
+    }
+    
+    return (
+      <Form.Group key={name} className="mb-3">
+        <OverlayTrigger
+          placement="right"
+          overlay={<Tooltip>{label} {unit ? `(${unit})` : ''}</Tooltip>}
+        >
+          <Form.Label>{label} {unit ? <span className="text-muted">({unit})</span> : ''}</Form.Label>
+        </OverlayTrigger>
+        <Form.Control
+          type={type}
+          name={name}
+          value={(formData[name] !== undefined && formData[name] !== null) ? String(formData[name]) : ''}
+          onChange={handleInputChange}
+          // Removed disabled condition - input fields are now always editable
+        />
+      </Form.Group>
+    );
+  };
 
   const renderStep = () => {
     // For basic calculations, enforce new flow: step 2 is always combined inputs
@@ -4393,7 +4416,7 @@ const CreateDesignSystem = () => {
                           production_target_t: formData.productionTarget_t ? parseFloat(formData.productionTarget_t) : 100,
                           target_market_fish_size: (formData.targetFishWeight && formData.targetFishWeight.toString().trim() !== '') ? parseFloat(formData.targetFishWeight) : null,
                           harvest_frequency: formData.harvestFrequency || 'Fortnightly',
-                          initial_weight_wi_g: (formData.initialWeight && formData.initialWeight.toString().trim() !== '') ? parseFloat(formData.initialWeight) : null,
+                          initial_weight_wi_g: (formData.initialWeightWiG && formData.initialWeightWiG.toString().trim() !== '') ? parseFloat(formData.initialWeightWiG) : null,
                           juvenile_size: (formData.juvenileSize && formData.juvenileSize.toString().trim() !== '') ? parseFloat(formData.juvenileSize) : null,
 
                           // Stage-wise FCR & Mortality
@@ -5587,7 +5610,7 @@ const CreateDesignSystem = () => {
                             },
                             production: {
                               targetSpecies: formData.targetSpecies,
-                              initialWeight: formData.initialWeightWiG || formData.initialWeight,
+                              initialWeight: formData.initialWeightWiGWiG || formData.initialWeightWiG,
                               targetFishWeight: formData.targetFishWeight,
                               targetNumFish: formData.targetNumFish,
                               productionTarget_t: formData.productionTarget_t,
@@ -5644,7 +5667,7 @@ const CreateDesignSystem = () => {
                             // Species and production parameters
                             species: formData.targetSpecies || "Nile tilapia",
                             // These three fields must ALWAYS be included in the request - null if empty
-                            initial_weight_wi_g: (formData.initialWeight && formData.initialWeight.toString().trim() !== '') ? parseFloat(formData.initialWeight) : null,
+                            initial_weight_wi_g: (formData.initialWeightWiG && formData.initialWeightWiG.toString().trim() !== '') ? parseFloat(formData.initialWeightWiG) : null,
                             juvenile_size: (formData.juvenileSize && formData.juvenileSize.toString().trim() !== '') ? parseFloat(formData.juvenileSize) : null,
                             target_market_fish_size: (formData.targetFishWeight && formData.targetFishWeight.toString().trim() !== '') ? parseFloat(formData.targetFishWeight) : null,
 
@@ -5667,6 +5690,11 @@ const CreateDesignSystem = () => {
 
                           // Debug: Verify the three null parameters are always included
                           console.log('🔍 Null Parameters Check:');
+                          console.log('  formData.initialWeightWiG:', formData.initialWeightWiG);
+                          console.log('  formData.initialWeightWiG type:', typeof formData.initialWeightWiG);
+                          console.log('  formData.initialWeightWiG trim:', formData.initialWeightWiG ? formData.initialWeightWiG.toString().trim() : 'undefined');
+                          console.log('  formData keys containing weight:', Object.keys(formData).filter(key => key.toLowerCase().includes('weight')));
+                          console.log('  formData keys containing initial:', Object.keys(formData).filter(key => key.toLowerCase().includes('initial')));
                           console.log('  initial_weight_wi_g:', advancedPayload.initial_weight_wi_g);
                           console.log('  target_market_fish_size:', advancedPayload.target_market_fish_size);
                           console.log('📤 Advanced Calculate Payload:', advancedPayload);
@@ -7342,7 +7370,7 @@ const CreateDesignSystem = () => {
 
                             // Species and production parameters
                             species: tempStep6Values.production.targetSpecies || "Nile tilapia",
-                            initial_weight_wi_g: (tempStep6Values.production.initialWeight && tempStep6Values.production.initialWeight.toString().trim() !== '') ? parseFloat(tempStep6Values.production.initialWeight) : null,
+                            initial_weight_wi_g: (tempStep6Values.production.initialWeightWiG && tempStep6Values.production.initialWeightWiG.toString().trim() !== '') ? parseFloat(tempStep6Values.production.initialWeightWiG) : null,
                             juvenile_size: (tempStep6Values.production.juvenileSize && tempStep6Values.production.juvenileSize.toString().trim() !== '') ? parseFloat(tempStep6Values.production.juvenileSize) : null,
                             target_market_fish_size: (tempStep6Values.production.targetFishWeight && tempStep6Values.production.targetFishWeight.toString().trim() !== '') ? parseFloat(tempStep6Values.production.targetFishWeight) : null,
 
