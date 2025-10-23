@@ -50,6 +50,7 @@ const Dashboard = () => {
     }
 
     const loadCurrentPlan = async () => {
+      let massBalanceDataVar = null;
       try {
         const plan = await getCurrentPlan();
         setCurrentPlan(plan);
@@ -307,6 +308,8 @@ const Dashboard = () => {
       setLoading(true);
       
       const token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
+      // Holder for normalized mass balance data across scopes
+      let massBalanceDataVar = null;
       const response = await fetch(`/backend/formulas/api/projects/${project.id}/production-calculations`, {
         method: 'GET',
         headers: {
@@ -353,6 +356,34 @@ const Dashboard = () => {
         }
       };
 
+      // Try to fetch Stage 6 results and Limiting Factor for basic report view
+      try {
+        const [step6Res, lfRes] = await Promise.all([
+          fetch(`/backend/advanced/formulas/api/projects/${project.id}/step_6_results`, {
+            method: 'GET',
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Accept': 'application/json'
+            }
+          }),
+          fetch(`/backend/advanced/formulas/api/projects/${project.id}/limiting_factor`, {
+            method: 'GET',
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Accept': 'application/json'
+            }
+          })
+        ]);
+        if (step6Res.ok) {
+          outputs.step6Results = await step6Res.json();
+        }
+        if (lfRes.ok) {
+          outputs.limitingFactor = await lfRes.json();
+        }
+      } catch (e) {
+        console.warn('Optional Stage 6 / Limiting Factor fetch failed for basic project:', e);
+      }
+
       // Create dummy inputs for the report
       const inputs = {
         waterTemp: 25,
@@ -396,14 +427,39 @@ const Dashboard = () => {
     }
   };
 
+  // Handle basic project update - navigate to design system with pre-filled data
+  const handleBasicProjectUpdate = (project) => {
+    // Store project info for pre-filling
+    localStorage.setItem('updateProjectId', project.id);
+    localStorage.setItem('updateProjectType', 'basic');
+    localStorage.setItem('updateProjectName', project.name);
+    localStorage.setItem('updateProjectSpecies', project.species_names || '');
+    
+    // Navigate to design system page with update flag
+    navigate('/design-systems/new?update=true&type=basic');
+  };
+
+  // Handle advanced project update - navigate to design system with pre-filled data
+  const handleAdvancedProjectUpdate = (project) => {
+    // Store project info for pre-filling
+    localStorage.setItem('updateProjectId', project.id);
+    localStorage.setItem('updateProjectType', 'advanced');
+    localStorage.setItem('updateProjectName', project.name);
+    localStorage.setItem('updateProjectSpecies', project.species_names || '');
+    
+    // Navigate to design system page with update flag
+    navigate('/design-systems/new?update=true&type=advanced');
+  };
+
   // Handle advanced project click - use step6results, limiting factor, stage7, and stage8 APIs
   const handleAdvancedProjectClick = async (project) => {
     try {
       setLoading(true);
       
       const token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
+      let massBalanceDataVar = null; // normalized mass balance holder for this handler
       
-      // Call all advanced APIs simultaneously
+      // Call all advanced APIs simultaneously (core stage APIs)
       const [step6Response, limitingFactorResponse, stage7Response, stage8Response] = await Promise.all([
         fetch(`/backend/advanced/formulas/api/projects/${project.id}/step_6_results`, {
           method: 'GET',
@@ -443,67 +499,128 @@ const Dashboard = () => {
         throw new Error(`Failed to fetch limiting factor: ${limitingFactorResponse.status}`);
       }
 
-      const step6Data = await step6Response.json();
+      let step6Data = await step6Response.json();
       const limitingFactorData = await limitingFactorResponse.json();
       
       console.log('Advanced step6 API response:', step6Data);
       console.log('Advanced limiting factor API response:', limitingFactorData);
 
+      // Mass Balance: ensure parameters exist (type=advanced), then fetch production-calculations
+      try {
+        // For saved advanced projects, just GET existing parameters (do not POST here)
+        const paramsRes = await fetch(`/backend/new_design/api/projects/${project.id}/water-quality-parameters`, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Accept': 'application/json'
+          }
+        });
+        if (!paramsRes.ok) {
+          console.warn('Mass balance params GET non-blocking error:', paramsRes.status);
+        }
+
+        const mbRes = await fetch(`/backend/formulas/api/projects/${project.id}/production-calculations`, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Accept': 'application/json'
+          }
+        });
+        if (mbRes.ok) {
+          const raw = await mbRes.json();
+          // Normalize to UI shape
+          var massBalanceData = {
+            oxygen: {
+              saturationAdjustedMgL: raw.o2_saturation_adjusted_mg_l ?? raw.o2_saturation_adjusted?.value ?? null,
+              MINDO_use: raw.min_do_use_mg_l ?? raw.min_do_mg_l ?? null,
+              effluentMgL: raw.oxygen_effluent_concentration_mg_l ?? raw.oxygen_effluent_concentration?.value ?? null,
+              consMgPerDay: raw.oxygen_consumption_production_mg_per_day ?? raw.oxygen_consumption_production?.value ?? null,
+              consKgPerDay: (raw.oxygen_consumption_production_mg_per_day ?? raw.oxygen_consumption_production?.value ?? 0) / 1_000_000
+            },
+            tss: {
+              effluentMgL: raw.tss_effluent_concentration_mg_l ?? raw.tss_effluent_concentration?.value ?? null,
+              prodMgPerDay: raw.tss_production_mg ?? raw.tss_production?.value ?? null,
+              prodKgPerDay: (raw.tss_production_mg ?? raw.tss_production?.value ?? 0) / 1_000_000,
+              MAXTSS_use: raw.max_tss_use_mg_l ?? null
+            },
+            co2: {
+              effluentMgL: raw.co2_effluent_concentration_mg_l ?? raw.co2_effluent_concentration?.value ?? null,
+              prodMgPerDay: raw.co2_production_mg_per_day ?? raw.co2_production?.value ?? null,
+              prodKgPerDay: (raw.co2_production_mg_per_day ?? raw.co2_production?.value ?? 0) / 1_000_000,
+              MAXCO2_use: raw.max_co2_use_mg_l ?? null
+            },
+            tan: {
+              effluentMgL: raw.tan_effluent_concentration_mg_l ?? raw.tan_effluent_concentration?.value ?? null,
+              prodMgPerDay: raw.tan_production_mg_per_day ?? raw.tan_production?.value ?? null,
+              prodKgPerDay: (raw.tan_production_mg_per_day ?? raw.tan_production?.value ?? 0) / 1_000_000,
+              MAXTAN_use: raw.max_tan_use_mg_l ?? null
+            }
+          };
+          massBalanceDataVar = massBalanceData;
+        }
+      } catch (e) {
+        console.warn('Mass balance (view) non-blocking error:', e);
+      }
+
       // Handle Stage 7 and Stage 8 (optional - may not exist for all projects)
+      // IMPORTANT: Stage 8 should only be available if Stage 7 exists
       let stage7Data = null;
       let stage8Data = null;
       
       if (stage7Response.ok) {
         stage7Data = await stage7Response.json();
         console.log('Advanced stage7 API response:', stage7Data);
+        if (stage8Response.ok) {
+          stage8Data = await stage8Response.json();
+          console.log('Advanced stage8 API response:', stage8Data);
+        } else {
+          console.log('Stage 8 data not available for this project');
+        }
       } else {
         console.log('Stage 7 data not available for this project');
-      }
-      
-      if (stage8Response.ok) {
-        stage8Data = await stage8Response.json();
-        console.log('Advanced stage8 API response:', stage8Data);
-      } else {
-        console.log('Stage 8 data not available for this project');
+        // Explicitly ignore Stage 8 if Stage 7 is not available
+        stage8Data = null;
       }
 
-      // Map API response to our expected format
-      const outputs = {
+      // Build advancedReport payload for renderer (after stage7Data/stage8Data exist)
+      const advancedReport = {
         step6Results: step6Data,
-        limitingFactor: limitingFactorData,
+        massBalanceData: massBalanceDataVar,
         stage7Results: stage7Data,
-        stage8Results: stage8Data,
-        // Add any other advanced-specific data mapping here
+        stage8Results: stage8Data
       };
 
-      // Create dummy inputs for the report
-      const inputs = {
-        waterTemp: 25,
-        salinity: 0,
-        siteElevation: 0,
-        minDO: 6,
-        pH: 7,
-        maxCO2: 10,
-        maxTAN: 1,
-        minTSS: 20,
-        tankVolume: 100,
-        numTanks: 1,
-        targetFishWeight: 500,
-        targetNumFish: 1000,
-        feedRate: 2,
-        feedProtein: 40,
-        o2Absorption: 80,
-        co2Removal: 70,
-        tssRemoval: 80,
-        tanRemoval: 60,
-        targetSpecies: 'Tilapia'
-      };
-      
-      // Navigate to ProjectReport with the calculated results
+      // Navigate to ProjectReport with the calculated results (same as basic projects)
       navigate('/project-reports/' + project.id, {
         state: {
-          inputs: inputs,
-          outputs: outputs,
+          inputs: {
+            waterTemp: 25,
+            salinity: 0,
+            siteElevation: 0,
+            minDO: 6,
+            pH: 7,
+            maxCO2: 10,
+            maxTAN: 1,
+            minTSS: 20,
+            tankVolume: 100,
+            numTanks: 1,
+            targetFishWeight: 500,
+            targetNumFish: 1000,
+            feedRate: 2,
+            feedProtein: 40,
+            o2Absorption: 80,
+            co2Removal: 70,
+            tssRemoval: 80,
+            tanRemoval: 60,
+            targetSpecies: 'Tilapia'
+          },
+          outputs: {
+            step6Results: step6Data,
+            limitingFactor: limitingFactorData,
+            stage7Results: stage7Data,
+            stage8Results: stage8Data,
+            massBalanceData: massBalanceDataVar
+          },
           projectType: 'advanced'
         }
       });
@@ -760,8 +877,17 @@ const Dashboard = () => {
                                 className="eye-btn" 
                                 aria-label="View basic project details" 
                                 onClick={() => handleBasicProjectClick(project)}
+                                title="View project details"
                               >
                                 <i className="bi bi-eye"></i>
+                              </span>
+                              <span 
+                                className="update-btn" 
+                                aria-label="Update basic project" 
+                                onClick={() => handleBasicProjectUpdate(project)}
+                                title="Update project"
+                              >
+                                <i className="bi bi-pencil-square"></i>
                               </span>
                             </div>
                           </Card.Body>
@@ -842,8 +968,17 @@ const Dashboard = () => {
                               className="eye-btn" 
                               aria-label="View advanced project details" 
                               onClick={() => handleAdvancedProjectClick(project)}
+                              title="View project details"
                             >
                               <i className="bi bi-eye"></i>
+                            </span>
+                            <span 
+                              className="update-btn" 
+                              aria-label="Update advanced project" 
+                              onClick={() => handleAdvancedProjectUpdate(project)}
+                              title="Update project"
+                            >
+                              <i className="bi bi-pencil-square"></i>
                             </span>
                           </div>
                         </Card.Body>

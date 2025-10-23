@@ -191,6 +191,36 @@ const AllProjects = () => {
         }
       };
 
+      // Try to fetch Stage 6 results (for Juvenile Stage 1 display in basic report)
+      try {
+        const step6Res = await fetch(`/backend/advanced/formulas/api/projects/${project.id}/step_6_results`, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Accept': 'application/json'
+          }
+        });
+        if (step6Res.ok) {
+          const step6Data = await step6Res.json();
+          outputs.step6Results = step6Data;
+        }
+        // Fetch limiting factor (Stage 1) for basic report
+        const lfRes = await fetch(`/backend/advanced/formulas/api/projects/${project.id}/limiting_factor`, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Accept': 'application/json'
+          }
+        });
+        if (lfRes.ok) {
+          const lfData = await lfRes.json();
+          outputs.limitingFactor = lfData;
+        }
+      } catch (e) {
+        // Non-blocking for basic flow
+        console.warn('Stage 6 results not available for basic project:', e);
+      }
+
       // Create dummy inputs for the report
       const inputs = {
         waterTemp: 25,
@@ -281,67 +311,128 @@ const AllProjects = () => {
         throw new Error(`Failed to fetch limiting factor: ${limitingFactorResponse.status}`);
       }
 
-      const step6Data = await step6Response.json();
+      let step6Data = await step6Response.json();
       const limitingFactorData = await limitingFactorResponse.json();
       
       console.log('Advanced step6 API response:', step6Data);
       console.log('Advanced limiting factor API response:', limitingFactorData);
 
+      // Mass Balance: GET existing parameters and then GET production-calculations
+      try {
+        const paramsRes = await fetch(`/backend/new_design/api/projects/${project.id}/water-quality-parameters`, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Accept': 'application/json'
+          }
+        });
+        if (!paramsRes.ok) {
+          console.warn('Mass balance params GET non-blocking error (AllProjects):', paramsRes.status);
+        }
+        const mbRes = await fetch(`/backend/formulas/api/projects/${project.id}/production-calculations`, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Accept': 'application/json'
+          }
+        });
+        if (mbRes.ok) {
+          const raw = await mbRes.json();
+          var massBalanceData = {
+            oxygen: {
+              saturationAdjustedMgL: raw.o2_saturation_adjusted_mg_l ?? raw.o2_saturation_adjusted?.value ?? null,
+              MINDO_use: raw.min_do_use_mg_l ?? raw.min_do_mg_l ?? null,
+              effluentMgL: raw.oxygen_effluent_concentration_mg_l ?? raw.oxygen_effluent_concentration?.value ?? null,
+              consMgPerDay: raw.oxygen_consumption_production_mg_per_day ?? raw.oxygen_consumption_production?.value ?? null,
+              consKgPerDay: (raw.oxygen_consumption_production_mg_per_day ?? raw.oxygen_consumption_production?.value ?? 0) / 1_000_000
+            },
+            tss: {
+              effluentMgL: raw.tss_effluent_concentration_mg_l ?? raw.tss_effluent_concentration?.value ?? null,
+              prodMgPerDay: raw.tss_production_mg ?? raw.tss_production?.value ?? null,
+              prodKgPerDay: (raw.tss_production_mg ?? raw.tss_production?.value ?? 0) / 1_000_000,
+              MAXTSS_use: raw.max_tss_use_mg_l ?? null
+            },
+            co2: {
+              effluentMgL: raw.co2_effluent_concentration_mg_l ?? raw.co2_effluent_concentration?.value ?? null,
+              prodMgPerDay: raw.co2_production_mg_per_day ?? raw.co2_production?.value ?? null,
+              prodKgPerDay: (raw.co2_production_mg_per_day ?? raw.co2_production?.value ?? 0) / 1_000_000,
+              MAXCO2_use: raw.max_co2_use_mg_l ?? null
+            },
+            tan: {
+              effluentMgL: raw.tan_effluent_concentration_mg_l ?? raw.tan_effluent_concentration?.value ?? null,
+              prodMgPerDay: raw.tan_production_mg_per_day ?? raw.tan_production?.value ?? null,
+              prodKgPerDay: (raw.tan_production_mg_per_day ?? raw.tan_production?.value ?? 0) / 1_000_000,
+              MAXTAN_use: raw.max_tan_use_mg_l ?? null
+            }
+          };
+          // Attach to step6Data so downstream view can consume (no reassignment of const)
+          if (step6Data && typeof step6Data === 'object') {
+            step6Data.massBalanceData = massBalanceData;
+          }
+        }
+      } catch (e) {
+        console.warn('Mass balance (AllProjects view) non-blocking error:', e);
+      }
+
       // Handle Stage 7 and Stage 8 (optional - may not exist for all projects)
+      // IMPORTANT: Stage 8 should only be available if Stage 7 exists
       let stage7Data = null;
       let stage8Data = null;
       
       if (stage7Response.ok) {
         stage7Data = await stage7Response.json();
         console.log('Advanced stage7 API response:', stage7Data);
+        if (stage8Response.ok) {
+          stage8Data = await stage8Response.json();
+          console.log('Advanced stage8 API response:', stage8Data);
+        } else {
+          console.log('Stage 8 data not available for this project');
+        }
       } else {
         console.log('Stage 7 data not available for this project');
-      }
-      
-      if (stage8Response.ok) {
-        stage8Data = await stage8Response.json();
-        console.log('Advanced stage8 API response:', stage8Data);
-      } else {
-        console.log('Stage 8 data not available for this project');
+        // Explicitly ignore Stage 8 if Stage 7 is not available
+        stage8Data = null;
       }
 
-      // Map API response to our expected format
-      const outputs = {
+      // Build advancedReport and navigate into CreateDesignSystem renderer
+      const advancedReport = {
         step6Results: step6Data,
-        limitingFactor: limitingFactorData,
+        massBalanceData: (step6Data && step6Data.massBalanceData) ? step6Data.massBalanceData : null,
         stage7Results: stage7Data,
-        stage8Results: stage8Data,
-        // Add any other advanced-specific data mapping here
+        stage8Results: stage8Data
       };
 
-      // Create dummy inputs for the report
-      const inputs = {
-        waterTemp: 25,
-        salinity: 0,
-        siteElevation: 0,
-        minDO: 6,
-        pH: 7,
-        maxCO2: 10,
-        maxTAN: 1,
-        minTSS: 20,
-        tankVolume: 100,
-        numTanks: 1,
-        targetFishWeight: 500,
-        targetNumFish: 1000,
-        feedRate: 2,
-        feedProtein: 40,
-        o2Absorption: 80,
-        co2Removal: 70,
-        tssRemoval: 80,
-        tanRemoval: 60,
-        targetSpecies: 'Tilapia'
-      };
-      
-      // Navigate to ProjectReport with the calculated results
+      // Navigate to ProjectReport with the calculated results (same as basic projects)
       navigate('/project-reports/' + project.id, {
         state: {
-          inputs: inputs,
-          outputs: outputs,
+          inputs: {
+            waterTemp: 25,
+            salinity: 0,
+            siteElevation: 0,
+            minDO: 6,
+            pH: 7,
+            maxCO2: 10,
+            maxTAN: 1,
+            minTSS: 20,
+            tankVolume: 100,
+            numTanks: 1,
+            targetFishWeight: 500,
+            targetNumFish: 1000,
+            feedRate: 2,
+            feedProtein: 40,
+            o2Absorption: 80,
+            co2Removal: 70,
+            tssRemoval: 80,
+            tanRemoval: 60,
+            targetSpecies: 'Tilapia'
+          },
+          outputs: {
+            step6Results: step6Data,
+            limitingFactor: limitingFactorData,
+            stage7Results: stage7Data,
+            stage8Results: stage8Data,
+            massBalanceData: (step6Data && step6Data.massBalanceData) ? step6Data.massBalanceData : null
+          },
           projectType: 'advanced'
         }
       });

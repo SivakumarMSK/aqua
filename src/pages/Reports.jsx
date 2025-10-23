@@ -188,6 +188,35 @@ const Reports = () => {
         MAXTAN_use: calcData.max_tan_use_mg_l ?? null
       }
     };
+
+    // Try to fetch Stage 6 results (used to show Juvenile Stage 1 under mass balance)
+    try {
+      const step6Response = await fetch(`/backend/advanced/formulas/api/projects/${report.id}/step_6_results`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Accept': 'application/json'
+        }
+      });
+      if (step6Response.ok) {
+        const step6Data = await step6Response.json();
+        outputs.step6Results = step6Data;
+      }
+      // Fetch limiting factor (Stage 1)
+      const lfResponse = await fetch(`/backend/advanced/formulas/api/projects/${report.id}/limiting_factor`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Accept': 'application/json'
+        }
+      });
+      if (lfResponse.ok) {
+        const lfData = await lfResponse.json();
+        outputs.limitingFactor = lfData;
+      }
+    } catch (e) {
+      console.warn('Stage 6 results not available for basic report:', e);
+    }
     const inputs = {
       waterTemp: 25,
       salinity: 0,
@@ -215,7 +244,8 @@ const Reports = () => {
       state: {
         inputs: inputs,
         outputs: outputs,
-        projectType: 'basic'
+        projectType: 'basic',
+        advancedInputs: inputs // For basic reports, use the same inputs as advancedInputs
       }
     });
   };
@@ -268,15 +298,18 @@ const Reports = () => {
     const limitingFactorData = await limitingFactorResponse.json();
     
     // Handle Stage 7 and Stage 8 (optional - may not exist for all projects)
+    // IMPORTANT: Stage 8 should only be available if Stage 7 exists
     let stage7Data = null;
     let stage8Data = null;
     
     if (stage7Response.ok) {
       stage7Data = await stage7Response.json();
-    }
-    
-    if (stage8Response.ok) {
-      stage8Data = await stage8Response.json();
+      if (stage8Response.ok) {
+        stage8Data = await stage8Response.json();
+      }
+    } else {
+      // Explicitly ignore Stage 8 if Stage 7 is not available
+      stage8Data = null;
     }
     
     // Map API response to our expected format
@@ -287,35 +320,108 @@ const Reports = () => {
       stage8Results: stage8Data,
     };
 
-    // Create dummy inputs for the report
-    const inputs = {
-      waterTemp: 25,
-      salinity: 0,
-      siteElevation: 0,
-      minDO: 6,
-      pH: 7,
-      maxCO2: 10,
-      maxTAN: 1,
-      minTSS: 20,
-      tankVolume: 100,
-      numTanks: 1,
-      targetFishWeight: 500,
-      targetNumFish: 1000,
-      feedRate: 2,
-      feedProtein: 40,
-      o2Absorption: 80,
-      co2Removal: 70,
-      tssRemoval: 80,
-      tanRemoval: 60,
-      targetSpecies: report.species || 'Tilapia'
-    };
+    // Fetch real inputs using water quality GET API
+    let inputs = null;
+    let inputsData = null;
+    try {
+      const inputsResponse = await fetch(`/backend/new_design/api/projects/${report.id}/water-quality-parameters`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Accept': 'application/json'
+        }
+      });
+      
+      if (inputsResponse.ok) {
+        inputsData = await inputsResponse.json();
+        // Map the API response to our expected format
+        const p = inputsData.parameters || {};
+        inputs = {
+          waterTemp: p.temperature ?? 25,
+          salinity: p.salinity ?? 0,
+          siteElevation: p.elevation_m ?? 0,
+          minDO: p.dissolved_O2_min ?? 6,
+          pH: p.pH ?? 7, // Use pH from API (capital H)
+          maxCO2: p.dissolved_CO2_max ?? 10,
+          maxTAN: p.TAN_max ?? 1,
+          minTSS: p.TSS_max ?? 20, // TSS_max is correct field name
+          tankVolume: p.tanks_volume_each ?? 100,
+          numTanks: p.number_of_tanks ?? 1,
+          targetFishWeight: p.target_market_fish_size ?? 500,
+          targetNumFish: p.target_max_stocking_density ?? 1000,
+          feedRate: p.target_feed_rate ?? 2,
+          feedProtein: p.feed_protein_percent ?? 40,
+          feedConversionRatio: p.feed_conversion_ratio ?? 0,
+          o2Absorption: p.oxygen_injection_efficiency ?? 80,
+          co2Removal: p.co2_removal_efficiency ?? 70,
+          tssRemoval: p.tss_removal_efficiency ?? 80,
+          tanRemoval: p.tan_removal_efficiency ?? 60,
+          targetSpecies: p.species || report.species || 'Tilapia',
+          supplementPureO2: Boolean(p.supplement_pure_o2),
+          // Additional fields from API response
+          alkalinity: p.alkalinity ?? 0,
+          targetMinO2Saturation: p.target_min_o2_saturation ?? 0,
+          productionTarget_t: p.production_target_t ?? 0,
+          harvestFrequency: p.harvest_frequency ?? '',
+          initialWeight: p.initial_weight_wi_g ?? 0
+        };
+      }
+    } catch (error) {
+      console.warn('Failed to fetch water quality parameters:', error);
+    }
     
+    // Fallback to dummy inputs if API call failed
+    if (!inputs) {
+      inputs = {
+        waterTemp: 25,
+        salinity: 0,
+        siteElevation: 0,
+        minDO: 6,
+        ph: 7,
+        maxCO2: 10,
+        maxTAN: 1,
+        minTSS: 20,
+        tankVolume: 100,
+        numTanks: 1,
+        targetFishWeight: 500,
+        targetNumFish: 1000,
+        feedRate: 2,
+        feedProtein: 40,
+        feedConversionRatio: 0,
+        o2Absorption: 80,
+        co2Removal: 70,
+        tssRemoval: 80,
+        tanRemoval: 60,
+        targetSpecies: report.species || 'Tilapia',
+        supplementPureO2: false,
+        // Additional fields
+        alkalinity: 0,
+        targetMinO2Saturation: 0,
+        productionTarget: 0,
+        harvestFrequency: '',
+        initialWeight: 0
+      };
+    }
+    
+    // Create Stage 7 specific inputs (with additional Stage 7 fields)
+    const stage7Inputs = inputsData ? {
+      ...inputs,
+      // Add Stage 7 specific fields from the API response
+      mbbrLocation: inputsData?.parameters?.mbbr_location ?? 'Inside tank',
+      mediaToWaterVolumeRatio: inputsData?.parameters?.media_to_water_volume_ratio ?? 0.1,
+      volumetricNitrificationRateVtr: inputsData?.parameters?.volumetric_nitrification_rate_vtr ?? 0.5,
+      standaloneHeightDiameterRatio: inputsData?.parameters?.standalone_height_diameter_ratio ?? 2.0,
+      pumpStopOverflowVolume: inputsData?.parameters?.pump_stop_overflow_volume ?? 0.1
+    } : inputs;
+
     // Navigate to ProjectReport with advanced data
     navigate('/project-reports/' + report.id, {
       state: {
         inputs: inputs,
         outputs: outputs,
-        projectType: 'advanced'
+        projectType: 'advanced',
+        advancedInputs: inputs, // For Mass Balance & Stage 6 tab
+        stage7Inputs: stage7Inputs // For Stage 7 tab with Stage 7 specific fields
       }
     });
   };

@@ -1,4 +1,5 @@
 const API_URL = '/backend/new_design/api';
+const FORMULAS_API_URL = '/backend/formulas/api';
 
 export const createWaterQualityParameters = async (waterQualityData) => {
   try {
@@ -31,7 +32,23 @@ export const createWaterQualityParameters = async (waterQualityData) => {
         salinity: parseFloat(waterQualityData.salinity),
         species: waterQualityData.targetSpecies,
         temperature: parseFloat(waterQualityData.waterTemp),
-        use_recommended: waterQualityData.useRecommendedValues
+        use_recommended: Boolean(waterQualityData.useRecommendedValues),
+        // type is driven by caller ('advanced' for advanced flow, otherwise defaults to 'basic')
+        type: waterQualityData.type || 'basic',
+        // Include production parameters required before GET calculations
+        number_of_tanks: Number(waterQualityData.numTanks || 0),
+        tanks_volume_each: parseFloat(waterQualityData.tankVolume || 0),
+        target_feed_rate: parseFloat(waterQualityData.feedRate || 0),
+        target_market_fish_size: parseFloat(waterQualityData.targetFishWeight || 0),
+        target_max_stocking_density: Number(waterQualityData.targetNumFish || 0),
+        feed_protein_percent: parseFloat(waterQualityData.feedProtein || 0),
+        feed_conversion_ratio: parseFloat(waterQualityData.feedConversionRatio || 0),
+        // Include efficiency parameters
+        oxygen_injection_efficiency: parseFloat(waterQualityData.o2Absorption || 0),
+        co2_removal_efficiency: parseFloat(waterQualityData.co2Removal || 0),
+        tan_removal_efficiency: parseFloat(waterQualityData.tanRemoval || 0),
+        tss_removal_efficiency: parseFloat(waterQualityData.tssRemoval || 0),
+        supplement_pure_o2: Boolean(waterQualityData.supplementPureO2)
       })
     });
 
@@ -78,6 +95,51 @@ export const createWaterQualityParameters = async (waterQualityData) => {
     return data;
   } catch (error) {
     console.error('Error creating water quality parameters:', error);
+    throw error;
+  }
+};
+
+// Live production calculations (short-polling friendly)
+// Allows passing an AbortSignal to cancel stale requests
+export const postLiveProductionCalculations = async (projectId, payload, signal) => {
+  try {
+    const token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
+    if (!token) {
+      throw new Error('Authentication token not found');
+    }
+
+    if (!projectId) {
+      projectId = localStorage.getItem('currentProjectId');
+    }
+    if (!projectId) {
+      throw new Error('Project ID not found.');
+    }
+
+    const response = await fetch(`${FORMULAS_API_URL}/projects/${projectId}/production-calculations/live`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      },
+      body: JSON.stringify(payload),
+      signal
+    });
+
+    const data = await response.json().catch(() => ({}));
+
+    if (!response.ok) {
+      const message = data.error || data.details || response.statusText || 'Live calculation failed';
+      throw new Error(`Error (${response.status}): ${message}`);
+    }
+
+    return data;
+  } catch (error) {
+    if (error.name === 'AbortError') {
+      // Swallow abort errors; caller handles debouncing
+      throw error;
+    }
+    console.error('postLiveProductionCalculations error:', error);
     throw error;
   }
 };
@@ -233,6 +295,118 @@ export const deleteDesign = async (designId) => {
   }
 };
 
+// Get design ID for a project using the designs GET API
+export const getDesignIdForProject = async (projectId, designSystemName) => {
+  try {
+    const token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
+    if (!token) {
+      throw new Error('Authentication token not found');
+    }
+
+    if (!projectId) {
+      throw new Error('Project ID is required');
+    }
+
+    if (!designSystemName) {
+      throw new Error('Design system name is required');
+    }
+
+    console.log('Fetching design ID for project:', projectId, 'with design system name:', designSystemName);
+
+    const response = await fetch(`${API_URL}/designs`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Accept': 'application/json'
+      }
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Designs API error response:', errorText);
+      throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
+    }
+
+    const data = await response.json();
+    console.log('Designs API response:', data);
+
+    // Find the design that matches the project ID (design system name might be different)
+    if (data.designs && Array.isArray(data.designs)) {
+      // First try to find by exact design system name match
+      let matchingDesign = data.designs.find(design => 
+        design.design_system_name === designSystemName &&
+        design.projects && design.projects.some(project => project.id === parseInt(projectId))
+      );
+      
+      // If no exact match, find by project ID only
+      if (!matchingDesign) {
+        console.log('No exact design system name match, searching by project ID only...');
+        matchingDesign = data.designs.find(design => 
+          design.projects && design.projects.some(project => project.id === parseInt(projectId))
+        );
+      }
+      
+      if (matchingDesign) {
+        console.log('Found matching design:', matchingDesign);
+        console.log('Design system name in DB:', matchingDesign.design_system_name);
+        console.log('Design system name searched:', designSystemName);
+        return { status: 'success', designId: matchingDesign.id };
+      } else {
+        console.error('No design found for project ID:', projectId);
+        console.log('Available designs for debugging:', data.designs.slice(0, 5).map(d => ({
+          id: d.id,
+          design_system_name: d.design_system_name,
+          project_ids: d.projects?.map(p => p.id)
+        })));
+        return { status: 'error', message: 'No design found for this project' };
+      }
+    } else {
+      console.error('Invalid designs response format:', data);
+      return { status: 'error', message: 'Invalid response format' };
+    }
+  } catch (error) {
+    console.error('Error fetching design ID:', error);
+    return { status: 'error', message: error.message };
+  }
+};
+
+// Get water quality parameters for existing project (for updates)
+export const getWaterQualityParameters = async (projectId) => {
+  try {
+    const token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
+    if (!token) {
+      throw new Error('Authentication token not found');
+    }
+
+    if (!projectId) {
+      throw new Error('Project ID is required');
+    }
+
+    console.log('Fetching water quality parameters for project:', projectId);
+
+    const response = await fetch(`${API_URL}/projects/${projectId}/water-quality-parameters`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Accept': 'application/json'
+      }
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Water quality parameters API error response:', errorText);
+      throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
+    }
+
+    const data = await response.json();
+    console.log('Water quality parameters API response:', data);
+    return { status: 'success', data };
+  } catch (error) {
+    console.error('Error fetching water quality parameters:', error);
+    return { status: 'error', message: error.message };
+  }
+};
+
 export const createDesignSystem = async (designData) => {
   try {
     // Get authentication token
@@ -250,9 +424,15 @@ export const createDesignSystem = async (designData) => {
       throw new Error('Design system name and project name are required');
     }
 
+    // Check if this is an update flow (passed from component)
+    // For update flows, we need both designId and projectId
+    const isUpdate = designData.isUpdateFlow && designData.designId && designData.projectId;
+    const existingDesignId = designData.designId || null;
+    const existingProjectId = designData.projectId || null;
+
     // Create request body exactly matching API spec
     const timestamp = new Date().toISOString();
-    const designId = Date.now().toString();
+    const designId = isUpdate ? existingDesignId : Date.now().toString();
     
     // Map camelCase form fields to snake_case API fields
     const requestBody = {
@@ -266,13 +446,21 @@ export const createDesignSystem = async (designData) => {
       targetSpecies: (designData.targetSpecies || '').trim(),
       useRecommendedValues: Boolean(designData.useRecommendedValues),
       projects: [{
-        id: designId,
+        id: isUpdate ? existingProjectId : designId,
         created_at: timestamp,
         name: designData.projectName.trim(),
         description: `Project for ${designData.designSystemName.trim()}`,
         species_names: designData.targetSpecies || ''
       }]
     };
+
+    // For updates, include the existing project_id in the main request body
+    if (isUpdate) {
+      requestBody.project_id = existingProjectId;
+      console.log('Updating existing design:', designId, 'and project:', existingProjectId);
+    } else {
+      console.log('Creating new design and project');
+    }
 
     console.log('Creating design system with:', requestBody);
   
@@ -310,8 +498,8 @@ export const createDesignSystem = async (designData) => {
       }
     }
 
-    // If successful (201), the response should include design_id, project_id, and recommended values
-    if (response.status === 201) {
+    // If successful (200 or 201), the response should include design_id, project_id, and recommended values
+    if (response.ok && (response.status === 200 || response.status === 201)) {
       if (!responseData.design_id || !responseData.project_id) {
         throw new Error('Invalid response: missing design_id or project_id');
       }
@@ -325,6 +513,15 @@ export const createDesignSystem = async (designData) => {
         localStorage.setItem('recommendedValues', JSON.stringify(responseData.recommended_values));
       }
 
+      // Log the action type for debugging
+      if (responseData.action) {
+        console.log('API Action:', responseData.action);
+        if (responseData.action === 'created') {
+          console.log('New design and project created successfully');
+        } else if (responseData.action === 'updated') {
+          console.log('Existing design and project updated successfully');
+        }
+      }
 
       return responseData;
     }

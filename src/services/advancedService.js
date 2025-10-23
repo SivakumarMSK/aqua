@@ -6,10 +6,10 @@ export async function postAdvancedParameters(projectId, payload) {
   const token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
   if (!token) throw new Error('No authentication token found. Please log in again.');
 
-  // Add type field for advanced projects
+  // Respect provided type; default to 'advanced' when not specified
   const payloadWithType = {
-    ...payload,
-    type: "advanced"
+    type: payload && payload.type ? payload.type : "advanced",
+    ...payload
   };
 
   const url = `${API_BASE}/advanced/formulas/api/projects/${projectId}/advanced/parameters`;

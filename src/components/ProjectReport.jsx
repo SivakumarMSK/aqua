@@ -7,17 +7,19 @@ import { generateMassBalanceCardsPdf } from '../utils/pdfGenerator';
 import { deleteProject } from '../services/projectService';
 import Toast from './Toast';
 import Swal from 'sweetalert2';
+import InputsDisplay from './InputsDisplay';
 import '../styles/MassBalanceReport.css';
 import '../styles/CreateDesignSystem.css';
+import '../styles/InputsDisplay.css';
 
 const ProjectReport = () => {
   const { id } = useParams();
   const location = useLocation();
-  const { inputs, outputs, projectType } = location.state || {};
+  const { inputs, outputs, projectType, advancedInputs, stage7Inputs } = location.state || {};
   const navigate = useNavigate();
   const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
   const [isDeleting, setIsDeleting] = useState(false);
-  const [activeReportTab, setActiveReportTab] = useState('all');
+  const [activeReportTab, setActiveReportTab] = useState(projectType === 'advanced' ? 'massBalance' : 'all');
 
   const handleDeleteProject = async () => {
     // Show beautiful confirmation dialog
@@ -156,13 +158,13 @@ const ProjectReport = () => {
                     <div className="tab-label">All Reports</div>
                   </div>
                   <div 
-                    className={`tab-item ${activeReportTab === 'stage6' ? 'active' : ''}`}
-                    onClick={() => setActiveReportTab('stage6')}
+                    className={`tab-item ${activeReportTab === 'massBalance' ? 'active' : ''}`}
+                    onClick={() => setActiveReportTab('massBalance')}
                   >
                     <div className="tab-icon">
-                      <i className="bi bi-calculator"></i>
+                      <i className="bi bi-scale"></i>
                     </div>
-                    <div className="tab-label">Stage 6</div>
+                    <div className="tab-label">Mass Balance & Stage 6</div>
                   </div>
                   {outputs.stage7Results && (
                     <div 
@@ -189,246 +191,372 @@ const ProjectReport = () => {
                 </div>
               </div>
 
-              {/* Stage 6 Report */}
-              {(!outputs.stage7Results && !outputs.stage8Results || activeReportTab === 'all' || activeReportTab === 'stage6') && (
+              {/* Mass Balance & Stage 6 Report */}
+              {(activeReportTab === 'all' || activeReportTab === 'massBalance') && (
                 <div className="report-cards">
-                  <h5 className="mb-3">Stage 6: Advanced Parameters</h5>
+                  <h4 className="mb-4 text-primary">Mass Balance & Stage 6 Report</h4>
                   
-                  {/* Stage 1 */}
-                  <div className="mb-4">
-                    <h6 className="text-primary mb-3">Stage 1</h6>
-                    <div className="row g-4 mb-4">
-                      {(() => {
-                        const s1 = outputs.step6Results?.step_6 || {};
-                        return (
-                          <>
-                            <div className="col-md-6">
-                              <Card className="h-100 shadow-sm oxygen-card">
-                                <Card.Body>
-                                  <Card.Title className="text-primary">Oxygen</Card.Title>
-                                  <div className="mt-3">
-                                    <div className="metric-row"><span className="label">L/min</span><strong>{s1.oxygen?.l_per_min ?? 0}</strong></div>
-                                    <div className="metric-row"><span className="label">m³/hr</span><strong>{s1.oxygen?.m3_per_hr ?? 0}</strong></div>
-                                  </div>
-                                </Card.Body>
-                              </Card>
-                            </div>
-                            <div className="col-md-6">
-                              <Card className="h-100 shadow-sm co2-card">
-                                <Card.Body>
-                                  <Card.Title className="text-primary">CO2</Card.Title>
-                                  <div className="mt-3">
-                                    <div className="metric-row"><span className="label">L/min</span><strong>{s1.co2?.l_per_min ?? 0}</strong></div>
-                                    <div className="metric-row"><span className="label">m³/hr</span><strong>{s1.co2?.m3_per_hr ?? 0}</strong></div>
-                                  </div>
-                                </Card.Body>
-                              </Card>
-                            </div>
-                            <div className="col-md-6">
-                              <Card className="h-100 shadow-sm tss-card">
-                                <Card.Body>
-                                  <Card.Title className="text-primary">TSS</Card.Title>
-                                  <div className="mt-3">
-                                    <div className="metric-row"><span className="label">L/min</span><strong>{s1.tss?.l_per_min ?? 0}</strong></div>
-                                    <div className="metric-row"><span className="label">m³/hr</span><strong>{s1.tss?.m3_per_hr ?? 0}</strong></div>
-                                  </div>
-                                </Card.Body>
-                              </Card>
-                            </div>
-                            <div className="col-md-6">
-                              <Card className="h-100 shadow-sm tan-card">
-                                <Card.Body>
-                                  <Card.Title className="text-primary">TAN</Card.Title>
-                                  <div className="mt-3">
-                                    <div className="metric-row"><span className="label">L/min</span><strong>{s1.tan?.l_per_min ?? 0}</strong></div>
-                                    <div className="metric-row"><span className="label">m³/hr</span><strong>{s1.tan?.m3_per_hr ?? 0}</strong></div>
-                                  </div>
-                                </Card.Body>
-                              </Card>
-                            </div>
-                          </>
-                        );
-                      })()}
+                  {/* Display Stage 6 Inputs */}
+                  {advancedInputs && (
+                    <div className="mb-4">
+                      <InputsDisplay inputs={advancedInputs} />
                     </div>
-                  </div>
+                  )}
+                  
+                  {/* Mass Balance Section */}
+                  <h5 className="mb-3">Mass Balance</h5>
+                  <div className="row g-4 mb-4">
+                    {(() => {
+                      const massBalance = outputs.massBalanceData || {};
+                      return (
+                        <>
+                          {/* Oxygen */}
+                          <div className="col-md-6">
+                            <Card className="h-100 shadow-sm oxygen-card">
+                              <Card.Body>
+                                <Card.Title className="text-primary">Oxygen</Card.Title>
+                                <div className="mt-3">
+                                  <div className="metric-row"><span className="label">Saturation Adjusted (mg/L)</span><strong>{massBalance.oxygen?.saturationAdjustedMgL ?? 0}</strong></div>
+                                  <div className="metric-row"><span className="label">Min DO Use (mg/L)</span><strong>{massBalance.oxygen?.MINDO_use ?? '-'}</strong></div>
+                                  <div className="metric-row"><span className="label">Effluent (mg/L)</span><strong>{massBalance.oxygen?.effluentMgL ?? 0}</strong></div>
+                                  <div className="metric-row"><span className="label">Consumption (mg/day)</span><strong>{massBalance.oxygen?.consMgPerDay ?? 0}</strong></div>
+                                  <div className="metric-row"><span className="label">Consumption (kg/day)</span><strong>{massBalance.oxygen?.consKgPerDay ?? 0}</strong></div>
+                                </div>
+                              </Card.Body>
+                            </Card>
+                          </div>
 
-                  {/* Stage 2 */}
-                  <div className="mb-4">
-                    <h6 className="text-primary mb-3">Stage 2</h6>
-                    <div className="row g-4 mb-4">
-                      {(() => {
-                        const s1 = outputs.step6Results?.step_6 || {};
-                        return (
-                          <>
-                            <div className="col-md-6">
-                              <Card className="h-100 shadow-sm oxygen-card">
-                                <Card.Body>
-                                  <Card.Title className="text-primary">Oxygen (Stage 2)</Card.Title>
-                                  <div className="mt-3">
-                                    <div className="metric-row"><span className="label">L/min</span><strong>{s1.stage2_oxygen?.l_per_min ?? 0}</strong></div>
-                                    <div className="metric-row"><span className="label">m³/hr</span><strong>{s1.stage2_oxygen?.m3_per_hr ?? 0}</strong></div>
-                                  </div>
-                                </Card.Body>
-                              </Card>
-                            </div>
-                            <div className="col-md-6">
-                              <Card className="h-100 shadow-sm co2-card">
-                                <Card.Body>
-                                  <Card.Title className="text-primary">CO2 (Stage 2)</Card.Title>
-                                  <div className="mt-3">
-                                    <div className="metric-row"><span className="label">L/min</span><strong>{s1.stage2_co2?.l_per_min ?? 0}</strong></div>
-                                    <div className="metric-row"><span className="label">m³/hr</span><strong>{s1.stage2_co2?.m3_per_hr ?? 0}</strong></div>
-                                  </div>
-                                </Card.Body>
-                              </Card>
-                            </div>
-                            <div className="col-md-6">
-                              <Card className="h-100 shadow-sm tss-card">
-                                <Card.Body>
-                                  <Card.Title className="text-primary">TSS (Stage 2)</Card.Title>
-                                  <div className="mt-3">
-                                    <div className="metric-row"><span className="label">L/min</span><strong>{s1.stage2_tss?.l_per_min ?? 0}</strong></div>
-                                    <div className="metric-row"><span className="label">m³/hr</span><strong>{s1.stage2_tss?.m3_per_hr ?? 0}</strong></div>
-                                  </div>
-                                </Card.Body>
-                              </Card>
-                            </div>
-                            <div className="col-md-6">
-                              <Card className="h-100 shadow-sm tan-card">
-                                <Card.Body>
-                                  <Card.Title className="text-primary">TAN (Stage 2)</Card.Title>
-                                  <div className="mt-3">
-                                    <div className="metric-row"><span className="label">L/min</span><strong>{s1.stage2_tan?.l_per_min ?? 0}</strong></div>
-                                    <div className="metric-row"><span className="label">m³/hr</span><strong>{s1.stage2_tan?.m3_per_hr ?? 0}</strong></div>
-                                  </div>
-                                </Card.Body>
-                              </Card>
-                            </div>
-                          </>
-                        );
-                      })()}
-                    </div>
-                  </div>
+                          {/* TSS */}
+                          <div className="col-md-6">
+                            <Card className="h-100 shadow-sm tss-card">
+                              <Card.Body>
+                                <Card.Title className="text-primary">Total Suspended Solids (TSS)</Card.Title>
+                                <div className="mt-3">
+                                  <div className="metric-row"><span className="label">Effluent (mg/L)</span><strong>{massBalance.tss?.effluentMgL ?? 0}</strong></div>
+                                  <div className="metric-row"><span className="label">Max TSS Use (mg/L)</span><strong>{massBalance.tss?.MAXTSS_use ?? '-'}</strong></div>
+                                  <div className="metric-row"><span className="label">Production (mg/day)</span><strong>{massBalance.tss?.prodMgPerDay ?? 0}</strong></div>
+                                  <div className="metric-row"><span className="label">Production (kg/day)</span><strong>{massBalance.tss?.prodKgPerDay ?? 0}</strong></div>
+                                </div>
+                              </Card.Body>
+                            </Card>
+                          </div>
 
-                  {/* Stage 3 */}
-                  <div className="mb-4">
-                    <h6 className="text-primary mb-3">Stage 3</h6>
-                    <div className="row g-4 mb-4">
-                      {(() => {
-                        const s1 = outputs.step6Results?.step_6 || {};
-                        return (
-                          <>
-                            <div className="col-md-6">
-                              <Card className="h-100 shadow-sm oxygen-card">
-                                <Card.Body>
-                                  <Card.Title className="text-primary">Oxygen (Stage 3)</Card.Title>
-                                  <div className="mt-3">
-                                    <div className="metric-row"><span className="label">L/min</span><strong>{s1.stage3_oxygen?.l_per_min ?? 0}</strong></div>
-                                    <div className="metric-row"><span className="label">m³/hr</span><strong>{s1.stage3_oxygen?.m3_per_hr ?? 0}</strong></div>
-                                  </div>
-                                </Card.Body>
-                              </Card>
-                            </div>
-                            <div className="col-md-6">
-                              <Card className="h-100 shadow-sm co2-card">
-                                <Card.Body>
-                                  <Card.Title className="text-primary">CO2 (Stage 3)</Card.Title>
-                                  <div className="mt-3">
-                                    <div className="metric-row"><span className="label">L/min</span><strong>{s1.stage3_co2?.l_per_min ?? 0}</strong></div>
-                                    <div className="metric-row"><span className="label">m³/hr</span><strong>{s1.stage3_co2?.m3_per_hr ?? 0}</strong></div>
-                                  </div>
-                                </Card.Body>
-                              </Card>
-                            </div>
-                            <div className="col-md-6">
-                              <Card className="h-100 shadow-sm tss-card">
-                                <Card.Body>
-                                  <Card.Title className="text-primary">TSS (Stage 3)</Card.Title>
-                                  <div className="mt-3">
-                                    <div className="metric-row"><span className="label">L/min</span><strong>{s1.stage3_tss?.l_per_min ?? 0}</strong></div>
-                                    <div className="metric-row"><span className="label">m³/hr</span><strong>{s1.stage3_tss?.m3_per_hr ?? 0}</strong></div>
-                                  </div>
-                                </Card.Body>
-                              </Card>
-                            </div>
-                            <div className="col-md-6">
-                              <Card className="h-100 shadow-sm tan-card">
-                                <Card.Body>
-                                  <Card.Title className="text-primary">TAN (Stage 3)</Card.Title>
-                                  <div className="mt-3">
-                                    <div className="metric-row"><span className="label">L/min</span><strong>{s1.stage3_tan?.l_per_min ?? 0}</strong></div>
-                                    <div className="metric-row"><span className="label">m³/hr</span><strong>{s1.stage3_tan?.m3_per_hr ?? 0}</strong></div>
-                                  </div>
-                                </Card.Body>
-                              </Card>
-                            </div>
-                          </>
-                        );
-                      })()}
-                    </div>
-                  </div>
+                          {/* CO2 */}
+                          <div className="col-md-6">
+                            <Card className="h-100 shadow-sm co2-card">
+                              <Card.Body>
+                                <Card.Title className="text-primary">Carbon Dioxide (CO₂)</Card.Title>
+                                <div className="mt-3">
+                                  <div className="metric-row"><span className="label">Effluent (mg/L)</span><strong>{massBalance.co2?.effluentMgL ?? 0}</strong></div>
+                                  <div className="metric-row"><span className="label">Max CO₂ Use (mg/L)</span><strong>{massBalance.co2?.MAXCO2_use ?? '-'}</strong></div>
+                                  <div className="metric-row"><span className="label">Production (mg/day)</span><strong>{massBalance.co2?.prodMgPerDay ?? 0}</strong></div>
+                                  <div className="metric-row"><span className="label">Production (kg/day)</span><strong>{massBalance.co2?.prodKgPerDay ?? 0}</strong></div>
+                                </div>
+                              </Card.Body>
+                            </Card>
+                          </div>
 
-                  {/* Limiting Factor */}
-                  <div className="mb-4">
-                    <h6 className="text-primary mb-3">Limiting Factor</h6>
-                    <div className="row g-4">
-                      {(() => {
-                        const lf = outputs.limitingFactor || {
-                          stage1: { factor: '-', flow_l_per_min: 0, flow_m3_per_hr: 0 },
-                          stage2: { factor: '-', flow_l_per_min: 0, flow_m3_per_hr: 0 },
-                          stage3: { factor: '-', flow_l_per_min: 0, flow_m3_per_hr: 0 }
-                        };
-                        return (
-                          <>
-                            <div className="col-md-4">
-                              <Card className="h-100 shadow-sm">
-                                <Card.Body>
-                                  <Card.Title className="text-primary">Stage 1</Card.Title>
-                                  <div className="mt-3">
-                                    <div className="metric-row"><span className="label">Factor</span><strong>{lf.stage1?.factor ?? '-'}</strong></div>
-                                    <div className="metric-row"><span className="label">Flow (L/min)</span><strong>{lf.stage1?.flow_l_per_min ?? 0}</strong></div>
-                                    <div className="metric-row"><span className="label">Flow (m³/hr)</span><strong>{lf.stage1?.flow_m3_per_hr ?? 0}</strong></div>
-                                  </div>
-                                </Card.Body>
-                              </Card>
-                            </div>
-                            <div className="col-md-4">
-                              <Card className="h-100 shadow-sm">
-                                <Card.Body>
-                                  <Card.Title className="text-primary">Stage 2</Card.Title>
-                                  <div className="mt-3">
-                                    <div className="metric-row"><span className="label">Factor</span><strong>{lf.stage2?.factor ?? '-'}</strong></div>
-                                    <div className="metric-row"><span className="label">Flow (L/min)</span><strong>{lf.stage2?.flow_l_per_min ?? 0}</strong></div>
-                                    <div className="metric-row"><span className="label">Flow (m³/hr)</span><strong>{lf.stage2?.flow_m3_per_hr ?? 0}</strong></div>
-                                  </div>
-                                </Card.Body>
-                              </Card>
-                            </div>
-                            <div className="col-md-4">
-                              <Card className="h-100 shadow-sm">
-                                <Card.Body>
-                                  <Card.Title className="text-primary">Stage 3</Card.Title>
-                                  <div className="mt-3">
-                                    <div className="metric-row"><span className="label">Factor</span><strong>{lf.stage3?.factor ?? '-'}</strong></div>
-                                    <div className="metric-row"><span className="label">Flow (L/min)</span><strong>{lf.stage3?.flow_l_per_min ?? 0}</strong></div>
-                                    <div className="metric-row"><span className="label">Flow (m³/hr)</span><strong>{lf.stage3?.flow_m3_per_hr ?? 0}</strong></div>
-                                  </div>
-                                </Card.Body>
-                              </Card>
-                            </div>
-                          </>
-                        );
-                      })()}
-                    </div>
+                          {/* TAN */}
+                          <div className="col-md-6">
+                            <Card className="h-100 shadow-sm tan-card">
+                              <Card.Body>
+                                <Card.Title className="text-primary">Total Ammonia Nitrogen (TAN)</Card.Title>
+                                <div className="mt-3">
+                                  <div className="metric-row"><span className="label">Effluent (mg/L)</span><strong>{massBalance.tan?.effluentMgL ?? 0}</strong></div>
+                                  <div className="metric-row"><span className="label">Max TAN Use (mg/L)</span><strong>{massBalance.tan?.MAXTAN_use ?? '-'}</strong></div>
+                                  <div className="metric-row"><span className="label">Production (mg/day)</span><strong>{massBalance.tan?.prodMgPerDay ?? 0}</strong></div>
+                                  <div className="metric-row"><span className="label">Production (kg/day)</span><strong>{massBalance.tan?.prodKgPerDay ?? 0}</strong></div>
+                                </div>
+                              </Card.Body>
+                            </Card>
+                          </div>
+                        </>
+                      );
+                    })()}
                   </div>
+                  
+                  {/* Stage 6 Section */}
+                  {outputs.step6Results && outputs.step6Results.step_6 && (
+                    <div className="mt-4">
+                      <h5 className="mb-3">Stage 6: Controlling Flow Rate</h5>
+                      
+                      {/* Stage 1 */}
+                      <h6 className="mb-3">Stage 1</h6>
+                      <div className="row g-4 mb-4">
+                        <div className="col-md-6">
+                          <Card className="h-100 shadow-sm oxygen-card">
+                            <Card.Body>
+                              <Card.Title className="text-primary">Oxygen</Card.Title>
+                              <div className="mt-3">
+                                <div className="metric-row">
+                                  <span className="label">L/min</span>
+                                  <strong>{outputs.step6Results.step_6.oxygen?.l_per_min ?? 0}</strong>
+                                </div>
+                                <div className="metric-row">
+                                  <span className="label">m³/hr</span>
+                                  <strong>{outputs.step6Results.step_6.oxygen?.m3_per_hr ?? 0}</strong>
+                                </div>
+                              </div>
+                            </Card.Body>
+                          </Card>
+                        </div>
+                        <div className="col-md-6">
+                          <Card className="h-100 shadow-sm co2-card">
+                            <Card.Body>
+                              <Card.Title className="text-primary">CO2</Card.Title>
+                              <div className="mt-3">
+                                <div className="metric-row">
+                                  <span className="label">L/min</span>
+                                  <strong>{outputs.step6Results.step_6.co2?.l_per_min ?? 0}</strong>
+                                </div>
+                                <div className="metric-row">
+                                  <span className="label">m³/hr</span>
+                                  <strong>{outputs.step6Results.step_6.co2?.m3_per_hr ?? 0}</strong>
+                                </div>
+                              </div>
+                            </Card.Body>
+                          </Card>
+                        </div>
+                        <div className="col-md-6">
+                          <Card className="h-100 shadow-sm tss-card">
+                            <Card.Body>
+                              <Card.Title className="text-primary">TSS</Card.Title>
+                              <div className="mt-3">
+                                <div className="metric-row">
+                                  <span className="label">L/min</span>
+                                  <strong>{outputs.step6Results.step_6.tss?.l_per_min ?? 0}</strong>
+                                </div>
+                                <div className="metric-row">
+                                  <span className="label">m³/hr</span>
+                                  <strong>{outputs.step6Results.step_6.tss?.m3_per_hr ?? 0}</strong>
+                                </div>
+                              </div>
+                            </Card.Body>
+                          </Card>
+                        </div>
+                        <div className="col-md-6">
+                          <Card className="h-100 shadow-sm tan-card">
+                            <Card.Body>
+                              <Card.Title className="text-primary">TAN</Card.Title>
+                              <div className="mt-3">
+                                <div className="metric-row">
+                                  <span className="label">L/min</span>
+                                  <strong>{outputs.step6Results.step_6.tan?.l_per_min ?? 0}</strong>
+                                </div>
+                                <div className="metric-row">
+                                  <span className="label">m³/hr</span>
+                                  <strong>{outputs.step6Results.step_6.tan?.m3_per_hr ?? 0}</strong>
+                                </div>
+                              </div>
+                            </Card.Body>
+                          </Card>
+                        </div>
+                      </div>
+                      
+                      {/* Stage 2 */}
+                      <h6 className="mb-3">Stage 2</h6>
+                      <div className="row g-4 mb-4">
+                        <div className="col-md-6">
+                          <Card className="h-100 shadow-sm oxygen-card">
+                            <Card.Body>
+                              <Card.Title className="text-primary">Oxygen (Stage 2)</Card.Title>
+                              <div className="mt-3">
+                                <div className="metric-row">
+                                  <span className="label">L/min</span>
+                                  <strong>{outputs.step6Results.step_6.stage2_oxygen?.l_per_min ?? 0}</strong>
+                                </div>
+                                <div className="metric-row">
+                                  <span className="label">m³/hr</span>
+                                  <strong>{outputs.step6Results.step_6.stage2_oxygen?.m3_per_hr ?? 0}</strong>
+                                </div>
+                              </div>
+                            </Card.Body>
+                          </Card>
+                        </div>
+                        <div className="col-md-6">
+                          <Card className="h-100 shadow-sm co2-card">
+                            <Card.Body>
+                              <Card.Title className="text-primary">CO2 (Stage 2)</Card.Title>
+                              <div className="mt-3">
+                                <div className="metric-row">
+                                  <span className="label">L/min</span>
+                                  <strong>{outputs.step6Results.step_6.stage2_co2?.l_per_min ?? 0}</strong>
+                                </div>
+                                <div className="metric-row">
+                                  <span className="label">m³/hr</span>
+                                  <strong>{outputs.step6Results.step_6.stage2_co2?.m3_per_hr ?? 0}</strong>
+                                </div>
+                              </div>
+                            </Card.Body>
+                          </Card>
+                        </div>
+                        <div className="col-md-6">
+                          <Card className="h-100 shadow-sm tss-card">
+                            <Card.Body>
+                              <Card.Title className="text-primary">TSS (Stage 2)</Card.Title>
+                              <div className="mt-3">
+                                <div className="metric-row">
+                                  <span className="label">L/min</span>
+                                  <strong>{outputs.step6Results.step_6.stage2_tss?.l_per_min ?? 0}</strong>
+                                </div>
+                                <div className="metric-row">
+                                  <span className="label">m³/hr</span>
+                                  <strong>{outputs.step6Results.step_6.stage2_tss?.m3_per_hr ?? 0}</strong>
+                                </div>
+                              </div>
+                            </Card.Body>
+                          </Card>
+                        </div>
+                        <div className="col-md-6">
+                          <Card className="h-100 shadow-sm tan-card">
+                            <Card.Body>
+                              <Card.Title className="text-primary">TAN (Stage 2)</Card.Title>
+                              <div className="mt-3">
+                                <div className="metric-row">
+                                  <span className="label">L/min</span>
+                                  <strong>{outputs.step6Results.step_6.stage2_tan?.l_per_min ?? 0}</strong>
+                                </div>
+                                <div className="metric-row">
+                                  <span className="label">m³/hr</span>
+                                  <strong>{outputs.step6Results.step_6.stage2_tan?.m3_per_hr ?? 0}</strong>
+                                </div>
+                              </div>
+                            </Card.Body>
+                          </Card>
+                        </div>
+                      </div>
+                      
+                      {/* Stage 3 */}
+                      <h6 className="mb-3">Stage 3</h6>
+                      <div className="row g-4 mb-4">
+                        <div className="col-md-6">
+                          <Card className="h-100 shadow-sm oxygen-card">
+                            <Card.Body>
+                              <Card.Title className="text-primary">Oxygen (Stage 3)</Card.Title>
+                              <div className="mt-3">
+                                <div className="metric-row">
+                                  <span className="label">L/min</span>
+                                  <strong>{outputs.step6Results.step_6.stage3_oxygen?.l_per_min ?? 0}</strong>
+                                </div>
+                                <div className="metric-row">
+                                  <span className="label">m³/hr</span>
+                                  <strong>{outputs.step6Results.step_6.stage3_oxygen?.m3_per_hr ?? 0}</strong>
+                                </div>
+                              </div>
+                            </Card.Body>
+                          </Card>
+                        </div>
+                        <div className="col-md-6">
+                          <Card className="h-100 shadow-sm co2-card">
+                            <Card.Body>
+                              <Card.Title className="text-primary">CO2 (Stage 3)</Card.Title>
+                              <div className="mt-3">
+                                <div className="metric-row">
+                                  <span className="label">L/min</span>
+                                  <strong>{outputs.step6Results.step_6.stage3_co2?.l_per_min ?? 0}</strong>
+                                </div>
+                                <div className="metric-row">
+                                  <span className="label">m³/hr</span>
+                                  <strong>{outputs.step6Results.step_6.stage3_co2?.m3_per_hr ?? 0}</strong>
+                                </div>
+                              </div>
+                            </Card.Body>
+                          </Card>
+                        </div>
+                        <div className="col-md-6">
+                          <Card className="h-100 shadow-sm tss-card">
+                            <Card.Body>
+                              <Card.Title className="text-primary">TSS (Stage 3)</Card.Title>
+                              <div className="mt-3">
+                                <div className="metric-row">
+                                  <span className="label">L/min</span>
+                                  <strong>{outputs.step6Results.step_6.stage3_tss?.l_per_min ?? 0}</strong>
+                                </div>
+                                <div className="metric-row">
+                                  <span className="label">m³/hr</span>
+                                  <strong>{outputs.step6Results.step_6.stage3_tss?.m3_per_hr ?? 0}</strong>
+                                </div>
+                              </div>
+                            </Card.Body>
+                          </Card>
+                        </div>
+                        <div className="col-md-6">
+                          <Card className="h-100 shadow-sm tan-card">
+                            <Card.Body>
+                              <Card.Title className="text-primary">TAN (Stage 3)</Card.Title>
+                              <div className="mt-3">
+                                <div className="metric-row">
+                                  <span className="label">L/min</span>
+                                  <strong>{outputs.step6Results.step_6.stage3_tan?.l_per_min ?? 0}</strong>
+                                </div>
+                                <div className="metric-row">
+                                  <span className="label">m³/hr</span>
+                                  <strong>{outputs.step6Results.step_6.stage3_tan?.m3_per_hr ?? 0}</strong>
+                                </div>
+                              </div>
+                            </Card.Body>
+                          </Card>
+                        </div>
+                      </div>
+                      
+                      {/* Limiting Factor */}
+                      <h6 className="mb-3">Limiting Factor</h6>
+                      <div className="row g-4">
+                        <div className="col-md-4">
+                          <Card className="h-100 shadow-sm">
+                            <Card.Body>
+                              <Card.Title className="text-primary">Stage 1</Card.Title>
+                              <div className="mt-3">
+                                <div className="metric-row"><span className="label">Factor</span><strong>{outputs.limitingFactor?.stage1?.factor ?? '-'}</strong></div>
+                                <div className="metric-row"><span className="label">Flow (L/min)</span><strong>{outputs.limitingFactor?.stage1?.flow_l_per_min ?? 0}</strong></div>
+                                <div className="metric-row"><span className="label">Flow (m³/hr)</span><strong>{outputs.limitingFactor?.stage1?.flow_m3_per_hr ?? 0}</strong></div>
+                              </div>
+                            </Card.Body>
+                          </Card>
+                        </div>
+                        <div className="col-md-4">
+                          <Card className="h-100 shadow-sm">
+                            <Card.Body>
+                              <Card.Title className="text-primary">Stage 2</Card.Title>
+                              <div className="mt-3">
+                                <div className="metric-row"><span className="label">Factor</span><strong>{outputs.limitingFactor?.stage2?.factor ?? '-'}</strong></div>
+                                <div className="metric-row"><span className="label">Flow (L/min)</span><strong>{outputs.limitingFactor?.stage2?.flow_l_per_min ?? 0}</strong></div>
+                                <div className="metric-row"><span className="label">Flow (m³/hr)</span><strong>{outputs.limitingFactor?.stage2?.flow_m3_per_hr ?? 0}</strong></div>
+                              </div>
+                            </Card.Body>
+                          </Card>
+                        </div>
+                        <div className="col-md-4">
+                          <Card className="h-100 shadow-sm">
+                            <Card.Body>
+                              <Card.Title className="text-primary">Stage 3</Card.Title>
+                              <div className="mt-3">
+                                <div className="metric-row"><span className="label">Factor</span><strong>{outputs.limitingFactor?.stage3?.factor ?? '-'}</strong></div>
+                                <div className="metric-row"><span className="label">Flow (L/min)</span><strong>{outputs.limitingFactor?.stage3?.flow_l_per_min ?? 0}</strong></div>
+                                <div className="metric-row"><span className="label">Flow (m³/hr)</span><strong>{outputs.limitingFactor?.stage3?.flow_m3_per_hr ?? 0}</strong></div>
+                              </div>
+                            </Card.Body>
+                          </Card>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
+
 
               {/* Stage 7 Report */}
               {outputs.stage7Results && (activeReportTab === 'all' || activeReportTab === 'stage7') && (
                 <div className="report-cards">
                   {/* Stage 7 Title */}
                   <h4 className="mb-4 text-primary">Stage 7: Bio Filter & Sump Size</h4>
+                  
+                  {/* Display Stage 7 Inputs */}
+                  {stage7Inputs && (
+                    <div className="mb-4">
+                      <InputsDisplay inputs={stage7Inputs} showOnlyStage7Specific={true} />
+                    </div>
+                  )}
                   
                   <h5 className="mb-3">Bio Filter Parameters</h5>
                   
@@ -752,6 +880,89 @@ const ProjectReport = () => {
                 </Card.Body>
               </Card>
             </div>
+
+            {/* Stage 6: Juvenile (Stage 1) - show only when provided */}
+            {outputs.step6Results && outputs.step6Results.step_6 && (
+              <div className="col-12 mt-2">
+                <h5 className="mb-3">Stage 6: Juvenile (Stage 1)</h5>
+                {(() => {
+                  const s1 = outputs.step6Results.step_6 || {};
+                  return (
+                    <div className="row g-4">
+                      <div className="col-md-6">
+                        <Card className="h-100 shadow-sm oxygen-card">
+                          <Card.Body>
+                            <Card.Title className="text-primary">Oxygen</Card.Title>
+                            <div className="mt-3">
+                              <div className="metric-row"><span className="label">L/min</span><strong>{s1.oxygen?.l_per_min ?? 0}</strong></div>
+                              <div className="metric-row"><span className="label">m³/hr</span><strong>{s1.oxygen?.m3_per_hr ?? 0}</strong></div>
+                            </div>
+                          </Card.Body>
+                        </Card>
+                      </div>
+                      <div className="col-md-6">
+                        <Card className="h-100 shadow-sm co2-card">
+                          <Card.Body>
+                            <Card.Title className="text-primary">CO2</Card.Title>
+                            <div className="mt-3">
+                              <div className="metric-row"><span className="label">L/min</span><strong>{s1.co2?.l_per_min ?? 0}</strong></div>
+                              <div className="metric-row"><span className="label">m³/hr</span><strong>{s1.co2?.m3_per_hr ?? 0}</strong></div>
+                            </div>
+                          </Card.Body>
+                        </Card>
+                      </div>
+                      <div className="col-md-6">
+                        <Card className="h-100 shadow-sm tss-card">
+                          <Card.Body>
+                            <Card.Title className="text-primary">TSS</Card.Title>
+                            <div className="mt-3">
+                              <div className="metric-row"><span className="label">L/min</span><strong>{s1.tss?.l_per_min ?? 0}</strong></div>
+                              <div className="metric-row"><span className="label">m³/hr</span><strong>{s1.tss?.m3_per_hr ?? 0}</strong></div>
+                            </div>
+                          </Card.Body>
+                        </Card>
+                      </div>
+                      <div className="col-md-6">
+                        <Card className="h-100 shadow-sm tan-card">
+                          <Card.Body>
+                            <Card.Title className="text-primary">TAN</Card.Title>
+                            <div className="mt-3">
+                              <div className="metric-row"><span className="label">L/min</span><strong>{s1.tan?.l_per_min ?? 0}</strong></div>
+                              <div className="metric-row"><span className="label">m³/hr</span><strong>{s1.tan?.m3_per_hr ?? 0}</strong></div>
+                            </div>
+                          </Card.Body>
+                        </Card>
+                      </div>
+                    </div>
+                  );
+                })()}
+              </div>
+            )}
+            {/* Limiting Factor (Stage 1) below Juvenile */}
+            {outputs.limitingFactor && (
+              <div className="col-12 mt-2">
+                <h6 className="text-primary mb-2">Limiting Factor (Stage 1)</h6>
+                {(() => {
+                  const lf = outputs.limitingFactor || {};
+                  return (
+                    <div className="row g-3">
+                      <div className="col-md-6 col-lg-4">
+                        <Card className="h-100 shadow-sm">
+                          <Card.Body>
+                            <Card.Title className="text-primary">Stage 1</Card.Title>
+                            <div className="mt-2">
+                              <div className="metric-row"><span className="label">Factor</span><strong>{lf.stage1?.factor ?? '-'}</strong></div>
+                              <div className="metric-row"><span className="label">Flow (L/min)</span><strong>{lf.stage1?.flow_l_per_min ?? 0}</strong></div>
+                              <div className="metric-row"><span className="label">Flow (m³/hr)</span><strong>{lf.stage1?.flow_m3_per_hr ?? 0}</strong></div>
+                            </div>
+                          </Card.Body>
+                        </Card>
+                      </div>
+                    </div>
+                  );
+                })()}
+              </div>
+            )}
           </div>
           )}
         </div>

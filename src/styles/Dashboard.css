@@ -254,6 +254,7 @@
   background: rgba(255, 255, 255, 0.7);
   backdrop-filter: blur(4px);
   cursor: pointer;
+  margin-right: 8px;
 }
 
 .eye-btn i {
@@ -261,9 +262,38 @@
   font-size: 1rem;
 }
 
+.update-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(4px);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.update-btn i {
+  color: #0f172a;
+  font-size: 1rem;
+}
+
 .design-system-card:hover .eye-btn,
-.project-card:hover .eye-btn {
+.project-card:hover .eye-btn,
+.design-system-card:hover .update-btn,
+.project-card:hover .update-btn {
   background: rgba(255, 255, 255, 0.9);
+}
+
+.update-btn:hover {
+  background: rgba(13, 110, 253, 0.1);
+  transform: scale(1.05);
+}
+
+.update-btn:hover i {
+  color: #0d6efd;
 }
 
 .view-all-card .card-cta-br { display: none; }
@@ -288,18 +318,7 @@
 }
 
 /* Pastel variants cycling */
-.cards-wrapper > .design-system-card:nth-child(6n+1),
-.cards-wrapper > .project-card:nth-child(6n+1) { --from: #eaf3ff; --to: #dceaff; --border: #cfe0ff; }
-.cards-wrapper > .design-system-card:nth-child(6n+2),
-.cards-wrapper > .project-card:nth-child(6n+2) { --from: #ffe8f3; --to: #ffd6e8; --border: #ffc2dd; }
-.cards-wrapper > .design-system-card:nth-child(6n+3),
-.cards-wrapper > .project-card:nth-child(6n+3) { --from: #e9fff0; --to: #d6f9e2; --border: #c5f2d5; }
-.cards-wrapper > .design-system-card:nth-child(6n+4),
-.cards-wrapper > .project-card:nth-child(6n+4) { --from: #fff1e3; --to: #ffe3c7; --border: #ffd5ad; }
-.cards-wrapper > .design-system-card:nth-child(6n+5),
-.cards-wrapper > .project-card:nth-child(6n+5) { --from: #f1eaff; --to: #e3d6ff; --border: #d6c5ff; }
-.cards-wrapper > .design-system-card:nth-child(6n+6),
-.cards-wrapper > .project-card:nth-child(6n+6) { --from: #e6fbff; --to: #ccf4ff; --border: #b8eeff; }
+/* Removed nth-child cycling to keep fixed category colors */
 
 .view-all-card:hover {
   background: linear-gradient(135deg, #e9ecef 0%, #dee2e6 100%);
@@ -313,6 +332,30 @@
 
 .view-all-card:hover i {
   color: #495057;
+}
+
+/* Fixed category colors: ensure single, consistent color per card type */
+/* Design system cards: blue variant */
+.design-system-card {
+  --from: #eaf3ff !important;
+  --to: #dceaff !important;
+  --border: #cfe0ff !important;
+}
+
+/* Basic project cards: purple variant */
+.project-card.basic-project-card,
+.basic-project-card {
+  --from: #f1eaff !important;
+  --to: #e3d6ff !important;
+  --border: #d6c5ff !important;
+}
+
+/* Advanced project cards: green variant */
+.project-card.advanced-project-card,
+.advanced-project-card {
+  --from: #e9fff0 !important;
+  --to: #d6f9e2 !important;
+  --border: #c5f2d5 !important;
 }
 
 .design-system-card .card-body,

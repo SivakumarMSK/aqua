@@ -191,6 +191,23 @@
   box-shadow: 0 4px 12px rgba(25, 135, 84, 0.15);
 }
 
+/* Fixed category colors: ensure single, consistent color per card type */
+/* Basic projects: purple variant */
+.project-card.basic-project-card,
+.basic-project-card {
+  --from: #f1eaff !important;
+  --to: #e3d6ff !important;
+  --border: #d6c5ff !important;
+}
+
+/* Advanced projects: green variant */
+.project-card.advanced-project-card,
+.advanced-project-card {
+  --from: #e9fff0 !important;
+  --to: #d6f9e2 !important;
+  --border: #c5f2d5 !important;
+}
+
 .loading-container {
   display: flex;
   justify-content: center;
@@ -199,37 +216,7 @@
   background-color: #f8f9fa;
 }
 
-/* Pastel variants per position */
-.projects-grid > .project-card:nth-child(6n+1) {
-  --from: #eaf3ff; /* pastel blue */
-  --to: #dceaff;
-  --border: #cfe0ff;
-}
-.projects-grid > .project-card:nth-child(6n+2) {
-  --from: #ffe8f3; /* pastel pink */
-  --to: #ffd6e8;
-  --border: #ffc2dd;
-}
-.projects-grid > .project-card:nth-child(6n+3) {
-  --from: #e9fff0; /* pastel green */
-  --to: #d6f9e2;
-  --border: #c5f2d5;
-}
-.projects-grid > .project-card:nth-child(6n+4) {
-  --from: #fff1e3; /* pastel orange */
-  --to: #ffe3c7;
-  --border: #ffd5ad;
-}
-.projects-grid > .project-card:nth-child(6n+5) {
-  --from: #f1eaff; /* pastel purple */
-  --to: #e3d6ff;
-  --border: #d6c5ff;
-}
-.projects-grid > .project-card:nth-child(6n+6) {
-  --from: #e6fbff; /* pastel cyan */
-  --to: #ccf4ff;
-  --border: #b8eeff;
-}
+/* Removed per-position variants to enforce fixed category colors */
 
 /* Darken text slightly on hover for contrast */
 .project-card:hover h5 { color: #0e1220; }

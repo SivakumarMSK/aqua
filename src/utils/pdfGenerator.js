@@ -419,7 +419,7 @@ export const generateMassBalanceCardsPdf = (formData, results) => {
 
 // Advanced Report PDF Generator - Stage 6 Only
 export const generateAdvancedReportPdf = (formData, advancedReport, limitingFactor) => {
-  return generateAdvancedReportPdfWithStages(formData, advancedReport, limitingFactor, null, null, ['stage6']);
+  return generateAdvancedReportPdfWithStages(formData, advancedReport, limitingFactor, null, null, ['massBalance', 'stage6']);
 };
 
 // Advanced Report PDF Generator - Stage 7 Only
@@ -434,7 +434,7 @@ export const generateStage8ReportPdf = (formData, stage8Report) => {
 
 // Advanced Report PDF Generator - All Available Stages
 export const generateCompleteAdvancedReportPdf = (formData, advancedReport, limitingFactor, stage7Report, stage8Report) => {
-  const availableStages = ['stage6'];
+  const availableStages = ['massBalance', 'stage6'];
   if (stage7Report) availableStages.push('stage7');
   if (stage8Report) availableStages.push('stage8');
   
@@ -451,7 +451,8 @@ export const generateAdvancedReportPdfWithStages = (formData, advancedReport, li
   setTextStyle(doc, PDF_STYLES.TITLE, PDF_STYLES.PRIMARY, true);
   let reportTitle = 'Advanced Design System Report';
   if (stagesToInclude.length === 1) {
-    if (stagesToInclude.includes('stage6')) reportTitle = 'Stage 6 Report';
+    if (stagesToInclude.includes('massBalance')) reportTitle = 'Mass Balance Report';
+    else if (stagesToInclude.includes('stage6')) reportTitle = 'Stage 6 Report';
     else if (stagesToInclude.includes('stage7')) reportTitle = 'Stage 7 Report';
     else if (stagesToInclude.includes('stage8')) reportTitle = 'Stage 8 Report';
   } else if (stagesToInclude.length > 1) {
@@ -511,11 +512,49 @@ export const generateAdvancedReportPdfWithStages = (formData, advancedReport, li
     }
   };
   
+  // Mass Balance Report
+  if (stagesToInclude.includes('massBalance') && advancedReport && advancedReport.massBalanceData) {
+    yPos = addSectionHeader(doc, 'Mass Balance Report', yPos);
+    
+    const massBalance = advancedReport.massBalanceData;
+    const formatNum = (n, digits = 2) => 
+      (typeof n === 'number' && isFinite(n)) ? n.toFixed(digits) : '-';
+    
+    // Mass Balance Results
+    const massBalanceResults = [
+      ['Oxygen - O₂ Saturation Adjusted', `${formatNum(massBalance.oxygen?.saturationAdjustedMgL)} mg/L`],
+      ['Oxygen - Min DO (use)', massBalance.oxygen?.MINDO_use != null ? `${massBalance.oxygen.MINDO_use} mg/L` : '-'],
+      ['Oxygen - Effluent Conc.', `${formatNum(massBalance.oxygen?.effluentMgL)} mg/L`],
+      ['Oxygen - Consumption (mg/day)', `${formatNum(massBalance.oxygen?.consMgPerDay, 0)} mg/day`],
+      ['Oxygen - Consumption (kg/day)', `${formatNum(massBalance.oxygen?.consKgPerDay)} kg/day`],
+      ['TSS - Max TSS (use)', massBalance.tss?.MAXTSS_use != null ? `${massBalance.tss.MAXTSS_use} mg/L` : '-'],
+      ['TSS - Effluent Conc.', `${formatNum(massBalance.tss?.effluentMgL)} mg/L`],
+      ['TSS - Production (mg/day)', `${formatNum(massBalance.tss?.prodMgPerDay, 0)} mg/day`],
+      ['TSS - Production (kg/day)', `${formatNum(massBalance.tss?.prodKgPerDay)} kg/day`],
+      ['CO2 - Max CO₂ (use)', massBalance.co2?.MAXCO2_use != null ? `${massBalance.co2.MAXCO2_use} mg/L` : '-'],
+      ['CO2 - Effluent Conc.', `${formatNum(massBalance.co2?.effluentMgL)} mg/L`],
+      ['CO2 - Production (mg/day)', `${formatNum(massBalance.co2?.prodMgPerDay, 0)} mg/day`],
+      ['CO2 - Production (kg/day)', `${formatNum(massBalance.co2?.prodKgPerDay)} kg/day`],
+      ['TAN - Max TAN (use)', massBalance.tan?.MAXTAN_use != null ? `${massBalance.tan.MAXTAN_use} mg/L` : '-'],
+      ['TAN - Effluent Conc.', `${formatNum(massBalance.tan?.effluentMgL)} mg/L`],
+      ['TAN - Production (mg/day)', `${formatNum(massBalance.tan?.prodMgPerDay, 0)} mg/day`],
+      ['TAN - Production (kg/day)', `${formatNum(massBalance.tan?.prodKgPerDay)} kg/day`]
+    ];
+    
+    yPos = checkPageBreak(doc, yPos, 40);
+    autoTable(doc, {
+      ...tableConfig,
+      startY: yPos,
+      body: cleanTableData(massBalanceResults),
+    });
+    yPos = (doc.lastAutoTable?.finalY || yPos) + PDF_STYLES.SECTION_SPACING;
+  }
+
   // Advanced Report Results - Stage 6
-  if (stagesToInclude.includes('stage6') && advancedReport && advancedReport.step_6) {
+  if (stagesToInclude.includes('stage6') && advancedReport && advancedReport.step6Results) {
     yPos = addSectionHeader(doc, 'Stage 6: Advanced Calculation Results', yPos);
     
-    const s1 = advancedReport.step_6;
+    const s1 = advancedReport.step6Results;
     const formatNum = (n, digits = 2) => 
       (typeof n === 'number' && isFinite(n)) ? n.toFixed(digits) : '-';
     

@@ -1,0 +1,321 @@
+.inputs-display {
+  margin-bottom: 2.5rem;
+  background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05), 0 1px 3px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e3f2fd;
+  animation: slideInUp 0.6s ease-out;
+}
+
+@keyframes slideInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.inputs-display h4 {
+  color: #0059ff;
+  font-weight: 700;
+  margin-bottom: 1.5rem;
+  text-align: center;
+  position: relative;
+  padding-bottom: 0.75rem;
+}
+
+.inputs-display h4::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 60px;
+  height: 3px;
+  background: linear-gradient(90deg, #0059ff, #00bcd4);
+  border-radius: 2px;
+}
+
+.parameter-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 0.875rem;
+}
+
+.parameter-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 1rem;
+  background: #ffffff;
+  border-radius: 8px;
+  border: 1px solid #e9ecef;
+  transition: all 0.2s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.parameter-row::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 100%;
+  width: 3px;
+  background: linear-gradient(180deg, #0059ff, #00bcd4);
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.parameter-row:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 89, 255, 0.1);
+  border-color: #0059ff;
+}
+
+.parameter-row:hover::before {
+  opacity: 1;
+}
+
+.parameter-row:last-child {
+  border-bottom: 1px solid #e9ecef;
+}
+
+.parameter-label {
+  font-weight: 600;
+  color: #495057;
+  flex: 1;
+  margin-right: 1rem;
+  font-size: 0.95rem;
+  line-height: 1.4;
+}
+
+.parameter-value {
+  font-weight: 700;
+  color: #0059ff;
+  text-align: right;
+  min-width: 120px;
+  font-size: 0.95rem;
+  background: linear-gradient(135deg, #f8f9fa, #ffffff);
+  padding: 0.25rem 0.75rem;
+  border-radius: 6px;
+  border: 1px solid #e9ecef;
+  position: relative;
+  overflow: hidden;
+}
+
+.parameter-value::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(0, 89, 255, 0.1), transparent);
+  transition: left 0.5s ease;
+}
+
+.parameter-row:hover .parameter-value::before {
+  left: 100%;
+}
+
+.stage-section {
+  padding: 1rem;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+  border: 1px solid #e9ecef;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  transition: all 0.2s ease;
+}
+
+.stage-section:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.stage-section h6 {
+  font-weight: 700;
+  margin-bottom: 1rem;
+  text-align: center;
+  padding: 0.5rem;
+  border-radius: 6px;
+  position: relative;
+}
+
+.stage-section:nth-child(1) h6 {
+  background: linear-gradient(135deg, #e3f2fd, #bbdefb);
+  color: #1976d2;
+}
+
+.stage-section:nth-child(2) h6 {
+  background: linear-gradient(135deg, #fff3e0, #ffcc80);
+  color: #f57c00;
+}
+
+.stage-section:nth-child(3) h6 {
+  background: linear-gradient(135deg, #ffebee, #ffcdd2);
+  color: #d32f2f;
+}
+
+.stage-section .parameter-grid {
+  gap: 0.75rem;
+}
+
+.stage-section .parameter-row {
+  padding: 0.5rem 0.75rem;
+  background: #ffffff;
+  border: 1px solid #e9ecef;
+  border-radius: 6px;
+  margin-bottom: 0.5rem;
+}
+
+.stage-section .parameter-row:last-child {
+  margin-bottom: 0;
+}
+
+.stage-section .parameter-label {
+  font-size: 0.9rem;
+  color: #6c757d;
+  font-weight: 500;
+}
+
+.stage-section .parameter-value {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #495057;
+  background: #f8f9fa;
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+}
+
+/* Card styling */
+.inputs-display .card {
+  border: 1px solid #e9ecef;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05), 0 1px 3px rgba(0, 0, 0, 0.1);
+  border-radius: 12px;
+  overflow: hidden;
+  transition: all 0.3s ease;
+  background: #ffffff;
+  animation: fadeInUp 0.6s ease-out;
+  animation-fill-mode: both;
+}
+
+.inputs-display .card:nth-child(1) { animation-delay: 0.1s; }
+.inputs-display .card:nth-child(2) { animation-delay: 0.2s; }
+.inputs-display .card:nth-child(3) { animation-delay: 0.3s; }
+.inputs-display .card:nth-child(4) { animation-delay: 0.4s; }
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.inputs-display .card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+}
+
+.inputs-display .card-header {
+  background: linear-gradient(135deg, #0059ff 0%, #00bcd4 100%);
+  border-bottom: none;
+  padding: 1rem 1.25rem;
+  position: relative;
+}
+
+.inputs-display .card-header::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, rgba(255,255,255,0.3), rgba(255,255,255,0.1));
+}
+
+.inputs-display .card-header h6 {
+  margin: 0;
+  color: #ffffff;
+  font-weight: 700;
+  font-size: 1rem;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.inputs-display .card-body {
+  padding: 1.25rem;
+  background: #ffffff;
+}
+
+/* Efficiency parameters special styling */
+.inputs-display .card:last-child .card-header {
+  background: linear-gradient(135deg, #4caf50 0%, #8bc34a 100%);
+}
+
+.inputs-display .card:last-child .parameter-row {
+  background: linear-gradient(135deg, #f1f8e9, #ffffff);
+  border-color: #c8e6c9;
+}
+
+.inputs-display .card:last-child .parameter-value {
+  background: linear-gradient(135deg, #e8f5e8, #ffffff);
+  color: #2e7d32;
+  border-color: #a5d6a7;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .inputs-display {
+    padding: 1rem;
+    margin-bottom: 1.5rem;
+  }
+  
+  .parameter-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+    padding: 0.75rem;
+  }
+  
+  .parameter-value {
+    text-align: left;
+    min-width: auto;
+    width: 100%;
+  }
+  
+  .stage-section .parameter-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+  
+  .inputs-display h4 {
+    font-size: 1.5rem;
+  }
+  
+  .inputs-display .card-body {
+    padding: 1rem;
+  }
+}
+
+@media (max-width: 576px) {
+  .inputs-display {
+    padding: 0.75rem;
+  }
+  
+  .parameter-row {
+    padding: 0.5rem;
+  }
+  
+  .stage-section {
+    padding: 0.75rem;
+  }
+}
