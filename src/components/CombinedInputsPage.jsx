@@ -53,19 +53,32 @@ const CombinedInputsPage = ({
               </Card.Body>
             </Card>
 
+            {/* Efficiency Section */}
+            <Card className="mb-4">
+              <Card.Header>
+                <h5 className="mb-0">System Efficiency Parameters</h5>
+              </Card.Header>
+              <Card.Body>
+                {renderInputWithTooltip('o2Absorption', 'O₂ Absorption Efficiency', '%')}
+                {renderInputWithTooltip('co2Removal', 'CO₂ Removal Efficiency', '%')}
+                {renderInputWithTooltip('tssRemoval', 'TSS Removal Efficiency', '%')}
+                {renderInputWithTooltip('tanRemoval', 'TAN Removal Efficiency', '%')}
+              </Card.Body>
+            </Card>
+
             {/* Production Section */}
             <Card className="mb-4">
               <Card.Header>
                 <h5 className="mb-0">Production Information</h5>
               </Card.Header>
               <Card.Body>
-                {renderInputWithTooltip('tankVolume', 'Tank Volume', 'm³')}
+                {renderInputWithTooltip('tankVolume', 'Tank Volume', 'L')}
                 {renderInputWithTooltip('productionTarget_t', 'Target production per year', 't')}
                 {renderInputWithTooltip('targetFishWeight', 'Target fish weight at harvest', 'g')}
                 {renderInputWithTooltip('feedRate', 'Feed rate', '% of biomass/day')}
                 {renderInputWithTooltip('feedConversionRatio', 'Feed Conversion Ratio (FCR)', '')}
                 {renderInputWithTooltip('numTanks', 'Total Number of Tanks')}
-                {renderInputWithTooltip('targetNumFish', 'Target Number of fish at harvest')}
+                {renderInputWithTooltip('targetNumFish', 'Target Max Stocking Density', 'kg/m³')}
                 {renderInputWithTooltip('feedProtein', 'Feed protein content', '%')}
 
                 {renderInputWithTooltip('harvestFrequency', 'Harvest frequency', '', 'text')}
@@ -98,19 +111,6 @@ const CombinedInputsPage = ({
                     </div>
                   </div>
                 </div>
-              </Card.Body>
-            </Card>
-
-            {/* Efficiency Section */}
-            <Card className="mb-4">
-              <Card.Header>
-                <h5 className="mb-0">System Efficiency Parameters</h5>
-              </Card.Header>
-              <Card.Body>
-                {renderInputWithTooltip('o2Absorption', 'O₂ Absorption Efficiency', '%')}
-                {renderInputWithTooltip('co2Removal', 'CO₂ Removal Efficiency', '%')}
-                {renderInputWithTooltip('tssRemoval', 'TSS Removal Efficiency', '%')}
-                {renderInputWithTooltip('tanRemoval', 'TAN Removal Efficiency', '%')}
               </Card.Body>
             </Card>
           </div>

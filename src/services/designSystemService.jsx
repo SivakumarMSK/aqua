@@ -307,8 +307,9 @@ export const getDesignIdForProject = async (projectId, designSystemName) => {
       throw new Error('Project ID is required');
     }
 
+    // For update flows, design system name might be empty - we'll search by project ID only
     if (!designSystemName) {
-      throw new Error('Design system name is required');
+      console.log('No design system name provided, will search by project ID only');
     }
 
     console.log('Fetching design ID for project:', projectId, 'with design system name:', designSystemName);
@@ -332,15 +333,19 @@ export const getDesignIdForProject = async (projectId, designSystemName) => {
 
     // Find the design that matches the project ID (design system name might be different)
     if (data.designs && Array.isArray(data.designs)) {
-      // First try to find by exact design system name match
-      let matchingDesign = data.designs.find(design => 
-        design.design_system_name === designSystemName &&
-        design.projects && design.projects.some(project => project.id === parseInt(projectId))
-      );
+      let matchingDesign = null;
       
-      // If no exact match, find by project ID only
+      // If design system name is provided, try exact match first
+      if (designSystemName) {
+        matchingDesign = data.designs.find(design => 
+          design.design_system_name === designSystemName &&
+          design.projects && design.projects.some(project => project.id === parseInt(projectId))
+        );
+      }
+      
+      // If no exact match or no design system name provided, find by project ID only
       if (!matchingDesign) {
-        console.log('No exact design system name match, searching by project ID only...');
+        console.log('Searching by project ID only...');
         matchingDesign = data.designs.find(design => 
           design.projects && design.projects.some(project => project.id === parseInt(projectId))
         );
@@ -350,7 +355,11 @@ export const getDesignIdForProject = async (projectId, designSystemName) => {
         console.log('Found matching design:', matchingDesign);
         console.log('Design system name in DB:', matchingDesign.design_system_name);
         console.log('Design system name searched:', designSystemName);
-        return { status: 'success', designId: matchingDesign.id };
+        return { 
+          status: 'success', 
+          designId: matchingDesign.id,
+          designSystemName: matchingDesign.design_system_name
+        };
       } else {
         console.error('No design found for project ID:', projectId);
         console.log('Available designs for debugging:', data.designs.slice(0, 5).map(d => ({

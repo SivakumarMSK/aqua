@@ -1048,3 +1048,29 @@
   }
 }
 
+/* ========================================
+   NUMBER INPUT SCROLL PREVENTION STYLES
+   ======================================== */
+
+/* Keep spinner arrows but prevent scroll wheel from changing values */
+input[type="number"] {
+  /* Keep default appearance to show spinner arrows */
+  appearance: auto;
+  -moz-appearance: number-input; /* Firefox - keep spinner arrows */
+}
+
+/* Prevent scroll wheel from changing number input values when focused */
+input[type="number"]:focus {
+  pointer-events: none;
+}
+
+/* Re-enable pointer events for other interactions (clicking, typing) */
+input[type="number"]:focus:hover {
+  pointer-events: auto;
+}
+
+/* Ensure normal functionality when not focused */
+input[type="number"]:not(:focus) {
+  pointer-events: auto;
+}
+

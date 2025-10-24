@@ -95,7 +95,7 @@ const InputsDisplay = ({ inputs, showOnlyStage7Specific = false }) => {
               <div className="parameter-grid">
                 <div className="parameter-row">
                   <span className="parameter-label">Tank Volume</span>
-                  <span className="parameter-value">{formatValue(inputs.tankVolume, 'm³')}</span>
+                  <span className="parameter-value">{formatValue(inputs.tankVolume, 'L')}</span>
                 </div>
                 <div className="parameter-row">
                   <span className="parameter-label">Number of Tanks</span>
@@ -106,8 +106,8 @@ const InputsDisplay = ({ inputs, showOnlyStage7Specific = false }) => {
                   <span className="parameter-value">{formatValue(inputs.targetFishWeight, 'g')}</span>
                 </div>
                 <div className="parameter-row">
-                  <span className="parameter-label">Target Number of Fish</span>
-                  <span className="parameter-value">{formatValue(inputs.targetNumFish)}</span>
+                  <span className="parameter-label">Target Max Stocking Density</span>
+                  <span className="parameter-value">{formatValue(inputs.targetNumFish, 'kg/m³')}</span>
                 </div>
                 <div className="parameter-row">
                   <span className="parameter-label">Feed Rate</span>

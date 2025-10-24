@@ -97,6 +97,7 @@ const DynamicOutputsPanel = ({ formData, liveOutputs, onFieldUpdate }) => {
   return (
     <div className="dynamic-outputs-panel">
       <h5 className="panel-title">Dynamic Outputs</h5>
+      <h6>Mass Balance</h6>
       
       {renderSection('Oxygen', 'oxygen', [
         { name: 'O₂ saturation adjusted', key: 'saturationAdjustedMgL', unit: 'mg/L' },
@@ -127,6 +128,7 @@ const DynamicOutputsPanel = ({ formData, liveOutputs, onFieldUpdate }) => {
         { name: 'Production', key: 'prodKgPerDay', unit: 'kg/day' }
       ])}
 
+      <h6>Controlling Flow Rate</h6>
       {renderSection('Stage 6: Juvenile (Stage 1)', 'stage6', [
         { name: 'Oxygen L/min', key: 'oxygen_l_per_min', unit: 'L/min' },
         { name: 'Oxygen m³/hr', key: 'oxygen_m3_per_hr', unit: 'm³/hr' },

@@ -15,6 +15,25 @@ import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import Toast from './Toast';
 
+// Prevent scroll behavior on number inputs
+const preventNumberInputScroll = () => {
+  // Disable scroll wheel events on number inputs
+  document.addEventListener('wheel', function(e) {
+    if (e.target.type === 'number' && e.target === document.activeElement) {
+      e.preventDefault();
+    }
+  }, { passive: false });
+
+  // Alternative: Disable on focus
+  document.addEventListener('focusin', function(e) {
+    if (e.target.type === 'number') {
+      e.target.addEventListener('wheel', function(e) {
+        e.preventDefault();
+      }, { passive: false });
+    }
+  });
+};
+
 // Stage 7 API functions
 const postStage7Parameters = async (projectId, payload) => {
   try {
@@ -248,6 +267,11 @@ const CreateDesignSystem = () => {
   const [step, setStep] = useState(1);
   const [showCombinedInputs, setShowCombinedInputs] = useState(false);
   const [loading, setLoading] = useState(false);
+
+  // Prevent scroll behavior on number inputs when component mounts
+  useEffect(() => {
+    preventNumberInputScroll();
+  }, []);
   const [loadingStep, setLoadingStep] = useState('');
   const [speciesList, setSpeciesList] = useState([]);
   const [loadingSpecies, setLoadingSpecies] = useState(true);
@@ -432,13 +456,28 @@ const CreateDesignSystem = () => {
       console.log('Loading existing project data for project:', projectId);
       
       // Get design system name from localStorage (set by update button)
-      const designSystemName = localStorage.getItem('updateProjectName') || formData.designSystemName;
+      // For updates, we don't have a design name in localStorage, so use empty string
+      const designSystemName = formData.designSystemName || '';
       
       // Fetch both water quality parameters and design ID
       const [waterQualityResponse, designIdResponse] = await Promise.all([
         getWaterQualityParameters(projectId),
         getDesignIdForProject(projectId, designSystemName)
       ]);
+      
+      // Update design system name from API response if available
+      console.log('Design ID response:', designIdResponse);
+      if (designIdResponse.status === 'success' && designIdResponse.designSystemName) {
+        console.log('Updating design system name from API:', designIdResponse.designSystemName);
+        setFormData(prev => ({
+          ...prev,
+          designSystemName: designIdResponse.designSystemName
+        }));
+      } else {
+        console.log('No design system name found in API response or API call failed');
+        console.log('Response status:', designIdResponse.status);
+        console.log('Design system name in response:', designIdResponse.designSystemName);
+      }
       
       if (waterQualityResponse.status === 'success' && waterQualityResponse.data) {
         const data = waterQualityResponse.data;
@@ -624,7 +663,7 @@ const CreateDesignSystem = () => {
           ...prev,
           projectName: updateProjectName || '',
           targetSpecies: updateProjectSpecies || '',
-          designSystemName: updateProjectName || '' // Use project name as design name for updates
+          designSystemName: '' // Leave design name empty for updates - user should enter their own design name
         }));
         
         // Set project ID immediately for update flow
@@ -739,7 +778,7 @@ const CreateDesignSystem = () => {
       },
       production: {
         targetSpecies: formData.targetSpecies,
-        initialWeight: formData.initialWeightWiGWiG || formData.initialWeightWiG,
+        initialWeight: formData.initialWeightWiG,
         juvenileSize: formData.juvenileSize,
         targetFishWeight: formData.targetFishWeight,
         targetNumFish: formData.targetNumFish,
@@ -908,11 +947,13 @@ const CreateDesignSystem = () => {
       const data = await getRecommendedValues(species);
       console.log('Raw recommended values:', data);
       
-      // Extract values from the species_parameters object
-      const params = data.species_parameters || data.parameters || {};
+      // Extract values from the new API response structure
+      const speciesParams = data.species_parameters || {};
+      const commonParams = data.common_parameters || {};
       const recommendedValues = {};
       
-      console.log('Processing parameters:', params);
+      console.log('Processing species parameters:', speciesParams);
+      console.log('Processing common parameters:', commonParams);
 
       // Helper function to get the best available value with improved handling
       const getBestValue = (param, preferMax = false, customKeys = ['design', 'recommended', 'optimal', 'min', 'max']) => {
@@ -951,49 +992,46 @@ const CreateDesignSystem = () => {
         return null;
       };
 
-      // Log all available parameters for debugging
-      console.log('Available parameters in API response:', Object.keys(params));
-
-      // Water Quality Parameters
+      // Water Quality Parameters from species_parameters
       // Temperature mapping
-      const tempValue = getBestValue(params.temperature, ['design', 'min', 'max']);
-      console.log('Temperature parameter:', params.temperature);
+      const tempValue = getBestValue(speciesParams.temperature, false, ['design', 'min', 'max']);
+      console.log('Temperature parameter:', speciesParams.temperature);
       console.log('Calculated temperature value:', tempValue);
       recommendedValues.waterTemp = tempValue;
       
       // ph mapping
-      const phValue = getBestValue(params.ph, false, ['design', 'min', 'max']);
-      console.log('ph parameter:', params.ph);
+      const phValue = getBestValue(speciesParams.ph, false, ['design', 'min', 'max']);
+      console.log('ph parameter:', speciesParams.ph);
       console.log('Calculated ph value:', phValue);
       recommendedValues.ph = phValue;
       
       // Salinity mapping
-      console.log('🔍 First function - Salinity parameter:', params.salinity);
-      const salinityValue = getBestValue(params.salinity, false, ['design', 'min', 'max']);
+      console.log('🔍 First function - Salinity parameter:', speciesParams.salinity);
+      const salinityValue = getBestValue(speciesParams.salinity, false, ['design', 'min', 'max']);
       console.log('🔍 First function - Calculated salinity value:', salinityValue, 'type:', typeof salinityValue);
       recommendedValues.salinity = salinityValue;
       
       // Dissolved oxygen mapping
-      const doValue = getBestValue(params.dissolved_oxygen, false, ['min', 'max']);
-      console.log('DO parameter:', params.dissolved_oxygen);
+      const doValue = getBestValue(speciesParams.dissolved_oxygen, false, ['min', 'max']);
+      console.log('DO parameter:', speciesParams.dissolved_oxygen);
       console.log('Calculated DO value:', doValue);
       recommendedValues.minDO = doValue;
       
       // Carbon dioxide mapping
-      const co2Value = getBestValue(params.carbon_dioxide, true, ['max']);
-      console.log('CO2 parameter:', params.carbon_dioxide);
+      const co2Value = getBestValue(speciesParams.carbon_dioxide, true, ['max']);
+      console.log('CO2 parameter:', speciesParams.carbon_dioxide);
       console.log('Calculated CO2 value:', co2Value);
       recommendedValues.maxCO2 = co2Value;
       
       // Total suspended solids mapping
-      const tssValue = getBestValue(params.total_suspended_solids, true, ['max']);
-      console.log('TSS parameter:', params.total_suspended_solids);
+      const tssValue = getBestValue(speciesParams.total_suspended_solids, true, ['max']);
+      console.log('TSS parameter:', speciesParams.total_suspended_solids);
       console.log('Calculated TSS value:', tssValue);
       recommendedValues.minTSS = tssValue;
       
       // Total ammonia nitrogen mapping
-      const tanValue = getBestValue(params.total_ammonia_nitrogen, true, ['max']);
-      console.log('TAN parameter:', params.total_ammonia_nitrogen);
+      const tanValue = getBestValue(speciesParams.total_ammonia_nitrogen, true, ['max']);
+      console.log('TAN parameter:', speciesParams.total_ammonia_nitrogen);
       console.log('Calculated TAN value:', tanValue);
       recommendedValues.maxTAN = tanValue;
       
@@ -1008,60 +1046,81 @@ const CreateDesignSystem = () => {
         maxTAN: recommendedValues.maxTAN
       });
 
-      // Skip all production phase parameters - they should be manually entered
-      // Production phase fields are:
-      // - productionPhase
-      // - tankVolume
-      // - numTanks
-      // - targetFishWeight
-      // - targetNumFish
-      // - feedRate
-      // - feedProtein
+      // Production Parameters from common_parameters
+      const systemDesign = commonParams.system_design || {};
+      const productionTargets = commonParams.production_targets || {};
       
-      // Log the production parameter defaults being used
-      console.log('Production parameters defaults:', {
-        tankVolume: recommendedValues.tankVolume,
-        numTanks: recommendedValues.numTanks,
-        targetFishWeight: recommendedValues.targetFishWeight,
-        targetNumFish: recommendedValues.targetNumFish,
-        feedRate: recommendedValues.feedRate,
-        feedProtein: recommendedValues.feedProtein
-      });
+      // Tank Volume (keep as L)
+      if (systemDesign.tank_volume_each_l !== undefined && systemDesign.tank_volume_each_l !== null) {
+        recommendedValues.tankVolume = systemDesign.tank_volume_each_l;
+      }
 
-      // Efficiency Parameters with improved fallbacks
-      const removalRates = params.removal_rates || params.removalRates || {};
-      
-      // Map oxygen absorption efficiency with fallbacks
-      recommendedValues.o2Absorption = getBestValue(
-        removalRates.o2_absorption || removalRates.o2Absorption ||
-        params.o2_absorption || params.o2Absorption ||
-        params.oxygen_absorption || params.oxygenAbsorption,
-        ['recommended', 'optimal', 'design']
-      ) || 90; // Default to 90% if no value found
-      
-      // Map TSS removal efficiency with fallbacks
-      recommendedValues.tssRemoval = getBestValue(
-        removalRates.tss_removal || removalRates.tssRemoval ||
-        params.tss_removal || params.tssRemoval ||
-        params.solids_removal || params.solidsRemoval,
-        ['recommended', 'optimal', 'design']
-      ) || 80; // Default to 80% if no value found
-      
-      // Map CO2 removal efficiency with fallbacks
-      recommendedValues.co2Removal = getBestValue(
-        removalRates.co2_removal || removalRates.co2Removal ||
-        params.co2_removal || params.co2Removal ||
-        params.carbon_dioxide_removal || params.carbonDioxideRemoval,
-        ['recommended', 'optimal', 'design']
-      ) || 70; // Default to 70% if no value found
-      
-      // Map TAN removal efficiency with fallbacks
-      recommendedValues.tanRemoval = getBestValue(
-        removalRates.tan_removal || removalRates.tanRemoval ||
-        params.tan_removal || params.tanRemoval ||
-        params.ammonia_removal || params.ammoniaRemoval,
-        ['recommended', 'optimal', 'design']
-      ) || 80; // Default to 80% if no value found
+      // Total Number of Tanks
+      if (systemDesign.num_tanks !== undefined && systemDesign.num_tanks !== null) {
+        recommendedValues.numTanks = systemDesign.num_tanks;
+      }
+
+      // Feed Rate (% body weight per day)
+      if (productionTargets.target_feed_rate_percent_bw_day !== undefined && 
+          productionTargets.target_feed_rate_percent_bw_day !== null) {
+        recommendedValues.feedRate = productionTargets.target_feed_rate_percent_bw_day;
+      }
+
+      // Feed Protein Content (%)
+      if (productionTargets.feed_protein_percent !== undefined && 
+          productionTargets.feed_protein_percent !== null) {
+        recommendedValues.feedProtein = productionTargets.feed_protein_percent;
+      }
+
+      // Feed Conversion Ratio
+      if (productionTargets.feed_conversion_ratio !== undefined && 
+          productionTargets.feed_conversion_ratio !== null) {
+        recommendedValues.feedConversionRatio = productionTargets.feed_conversion_ratio;
+      }
+
+      // Target Number of Fish (mapped from target_max_stocking_density_kg_m3)
+      if (productionTargets.target_max_stocking_density_kg_m3 !== undefined && 
+          productionTargets.target_max_stocking_density_kg_m3 !== null) {
+        recommendedValues.targetNumFish = productionTargets.target_max_stocking_density_kg_m3;
+      }
+
+      // Efficiency Parameters from common_parameters
+      if (commonParams.removal_efficiencies) {
+        const efficiencies = commonParams.removal_efficiencies;
+        
+        if (efficiencies.o2_absorption !== undefined) {
+          recommendedValues.o2Absorption = efficiencies.o2_absorption;
+        }
+        
+        if (efficiencies.tss_removal !== undefined) {
+          recommendedValues.tssRemoval = efficiencies.tss_removal;
+        }
+        
+        if (efficiencies.co2_removal !== undefined) {
+          recommendedValues.co2Removal = efficiencies.co2_removal;
+        }
+        
+        if (efficiencies.tan_removal !== undefined) {
+          recommendedValues.tanRemoval = efficiencies.tan_removal;
+        }
+      }
+
+      // Biofilter Sizing Parameters from common_parameters
+      if (commonParams.biofilter_sizing) {
+        const biofilter = commonParams.biofilter_sizing;
+        
+        if (biofilter.media_to_water_volume_ratio !== undefined) {
+          recommendedValues.mediaToWaterVolumeRatio = biofilter.media_to_water_volume_ratio;
+        }
+        
+        if (biofilter.standalone_height_diameter_ratio !== undefined) {
+          recommendedValues.standaloneHeightDiameterRatio = biofilter.standalone_height_diameter_ratio;
+        }
+        
+        if (biofilter.volumetric_nitrification_rate_vtr !== undefined) {
+          recommendedValues.volumetricNitrificationRateVtr = biofilter.volumetric_nitrification_rate_vtr;
+        }
+      }
 
       console.log('Mapped recommended values:', recommendedValues);
       return recommendedValues;
@@ -1115,6 +1174,7 @@ const CreateDesignSystem = () => {
     tankVolume: '', // m³
     numTanks: '',
     targetNumFish: '',
+    targetMaxStockingDensity: '', // kg/m³
     feedRate: '', // % of biomass/day
     feedConversionRatio: '', // Feed Conversion Ratio (FCR)
     feedProtein: '', // %
@@ -1124,6 +1184,11 @@ const CreateDesignSystem = () => {
     tssRemoval: '', // %
     co2Removal: '', // %
     tanRemoval: '', // %
+
+    // Biofilter Sizing Parameters
+    mediaToWaterVolumeRatio: '', // Media to water volume ratio
+    standaloneHeightDiameterRatio: '', // Standalone height diameter ratio
+    volumetricNitrificationRateVtr: '', // Volumetric nitrification rate VTR
   });
 
   // Sync latest form values for live polling payloads
@@ -1152,7 +1217,7 @@ const CreateDesignSystem = () => {
         },
         production: {
           targetSpecies: formData.targetSpecies,
-          initialWeight: formData.initialWeightWiGWiG || formData.initialWeightWiG,
+          initialWeight: formData.initialWeightWiG,
           juvenileSize: formData.juvenileSize,
           targetFishWeight: formData.targetFishWeight,
           targetNumFish: formData.targetNumFish,
@@ -1247,39 +1312,52 @@ const CreateDesignSystem = () => {
           console.log('Processing common parameters:', commonParams);
 
           // Water Quality Parameters from species_parameters
-          if (speciesParams.temperature?.design !== undefined && speciesParams.temperature.design !== null) {
-            updatedData.waterTemp = speciesParams.temperature.design.toString();
+          // Temperature - use design value if available, otherwise use min/max average
+          if (speciesParams.temperature) {
+            const tempValue = speciesParams.temperature.design !== undefined ? 
+              speciesParams.temperature.design : 
+              (speciesParams.temperature.min + speciesParams.temperature.max) / 2;
+            if (tempValue !== undefined && tempValue !== null) {
+              updatedData.waterTemp = tempValue.toString();
+            }
           }
           
+          // pH - use design value if available, otherwise use min/max average
           if (speciesParams.ph) {
-            const phValue = getBestValue(speciesParams.ph);
-            console.log('Setting pH Level:', phValue);
-            if (phValue !== null) {
+            const phValue = speciesParams.ph.design !== undefined ? 
+              speciesParams.ph.design : 
+              (speciesParams.ph.min + speciesParams.ph.max) / 2;
+            if (phValue !== undefined && phValue !== null) {
               updatedData.ph = phValue.toString();
             }
           }
           
+          // Salinity - use design value if available, otherwise use min/max average
           if (speciesParams.salinity) {
-            const salinityValue = getBestValue(speciesParams.salinity, false, ['design', 'min', 'max']);
-            console.log('🔍 Setting Salinity:', salinityValue, 'type:', typeof salinityValue);
-            if (salinityValue !== null && salinityValue !== undefined) {
+            const salinityValue = speciesParams.salinity.design !== undefined ? 
+              speciesParams.salinity.design : 
+              (speciesParams.salinity.min + speciesParams.salinity.max) / 2;
+            if (salinityValue !== undefined && salinityValue !== null) {
               updatedData.salinity = salinityValue.toString();
-              console.log('🔍 Salinity set in updatedData:', updatedData.salinity);
             }
           }
           
+          // Dissolved Oxygen - use min value
           if (speciesParams.dissolved_oxygen?.min !== undefined && speciesParams.dissolved_oxygen.min !== null) {
             updatedData.minDO = speciesParams.dissolved_oxygen.min.toString();
           }
           
+          // Carbon Dioxide - use max value
           if (speciesParams.carbon_dioxide?.max !== undefined && speciesParams.carbon_dioxide.max !== null) {
             updatedData.maxCO2 = speciesParams.carbon_dioxide.max.toString();
           }
           
+          // Total Suspended Solids - use max value
           if (speciesParams.total_suspended_solids?.max !== undefined && speciesParams.total_suspended_solids.max !== null) {
             updatedData.minTSS = speciesParams.total_suspended_solids.max.toString();
           }
           
+          // Total Ammonia Nitrogen - use max value
           if (speciesParams.total_ammonia_nitrogen?.max !== undefined && speciesParams.total_ammonia_nitrogen.max !== null) {
             updatedData.maxTAN = speciesParams.total_ammonia_nitrogen.max.toString();
           }
@@ -1288,36 +1366,45 @@ const CreateDesignSystem = () => {
           const systemDesign = commonParams.system_design || {};
           const productionTargets = commonParams.production_targets || {};
           
-          // Tank Volume (m³)
+          // Tank Volume (keep as L)
           if (systemDesign.tank_volume_each_l !== undefined && systemDesign.tank_volume_each_l !== null) {
-            const volumeInM3 = systemDesign.tank_volume_each_l / 1000;
-            console.log('Converting tank volume from', systemDesign.tank_volume_each_l, 'L to', volumeInM3, 'm³');
-            updatedData.tank_volume_each_l = volumeInM3.toString();
+            console.log('Setting tank volume to:', systemDesign.tank_volume_each_l, 'L');
+            updatedData.tankVolume = systemDesign.tank_volume_each_l.toString();
           }
 
           // Total Number of Tanks
           if (systemDesign.num_tanks !== undefined && systemDesign.num_tanks !== null) {
-            console.log('Setting num_tanks to:', systemDesign.num_tanks);
-            updatedData.num_tanks = systemDesign.num_tanks.toString();
+            console.log('Setting numTanks to:', systemDesign.num_tanks);
+            updatedData.numTanks = systemDesign.num_tanks.toString();
           }
 
-          // Feed Rate
+          // Feed Rate (% body weight per day)
           if (productionTargets.target_feed_rate_percent_bw_day !== undefined && 
               productionTargets.target_feed_rate_percent_bw_day !== null) {
-            console.log('Setting target_feed_rate_percent_bw_day to:', productionTargets.target_feed_rate_percent_bw_day);
-            updatedData.target_feed_rate_percent_bw_day = productionTargets.target_feed_rate_percent_bw_day.toString();
+            console.log('Setting feedRate to:', productionTargets.target_feed_rate_percent_bw_day);
+            updatedData.feedRate = productionTargets.target_feed_rate_percent_bw_day.toString();
           }
 
-          // Feed Protein Content
+          // Feed Protein Content (%)
           if (productionTargets.feed_protein_percent !== undefined && 
               productionTargets.feed_protein_percent !== null) {
-            console.log('Setting feed_protein_percent to:', productionTargets.feed_protein_percent);
-            updatedData.feed_protein_percent = productionTargets.feed_protein_percent.toString();
+            console.log('Setting feedProtein to:', productionTargets.feed_protein_percent);
+            updatedData.feedProtein = productionTargets.feed_protein_percent.toString();
           }
 
-          // Do not set these as they are null in the response:
-          // - target_market_fish_size_g (Target fish weight at harvest)
-          // - Target Number of fish at harvest (not provided in response)
+          // Feed Conversion Ratio
+          if (productionTargets.feed_conversion_ratio !== undefined && 
+              productionTargets.feed_conversion_ratio !== null) {
+            console.log('Setting feedConversionRatio to:', productionTargets.feed_conversion_ratio);
+            updatedData.feedConversionRatio = productionTargets.feed_conversion_ratio.toString();
+          }
+
+          // Target Number of Fish (mapped from target_max_stocking_density_kg_m3)
+          if (productionTargets.target_max_stocking_density_kg_m3 !== undefined && 
+              productionTargets.target_max_stocking_density_kg_m3 !== null) {
+            console.log('Setting targetNumFish to:', productionTargets.target_max_stocking_density_kg_m3);
+            updatedData.targetNumFish = productionTargets.target_max_stocking_density_kg_m3.toString();
+          }
 
           // Efficiency Parameters from common_parameters
           if (commonParams.removal_efficiencies) {
@@ -1337,6 +1424,23 @@ const CreateDesignSystem = () => {
             
             if (efficiencies.tan_removal !== undefined) {
               updatedData.tanRemoval = efficiencies.tan_removal.toString();
+            }
+          }
+
+          // Biofilter Sizing Parameters from common_parameters
+          if (commonParams.biofilter_sizing) {
+            const biofilter = commonParams.biofilter_sizing;
+            
+            if (biofilter.media_to_water_volume_ratio !== undefined) {
+              updatedData.mediaToWaterVolumeRatio = biofilter.media_to_water_volume_ratio.toString();
+            }
+            
+            if (biofilter.standalone_height_diameter_ratio !== undefined) {
+              updatedData.standaloneHeightDiameterRatio = biofilter.standalone_height_diameter_ratio.toString();
+            }
+            
+            if (biofilter.volumetric_nitrification_rate_vtr !== undefined) {
+              updatedData.volumetricNitrificationRateVtr = biofilter.volumetric_nitrification_rate_vtr.toString();
             }
           }
           
@@ -1411,8 +1515,15 @@ const CreateDesignSystem = () => {
       setError('');
     } else {
       // Normal input handling
+      if (name === 'initialWeightWiG') {
+        console.log('🔍 Initial Weight Input Change:', { name, value, type, checked });
+        console.log('🔍 Current formData.initialWeightWiG:', formData.initialWeightWiG);
+      }
       setFormData(prev => {
         const next = { ...prev, [name]: type === 'checkbox' ? checked : value };
+        if (name === 'initialWeightWiG') {
+          console.log('🔍 Updated formData.initialWeightWiG:', next.initialWeightWiG);
+        }
         // Update live ref immediately so debounced call sees latest keystroke
         liveFormRef.current = next;
         return next;
@@ -2053,7 +2164,7 @@ const CreateDesignSystem = () => {
         },
         production: {
           targetSpecies: formDataToUse.targetSpecies,
-          initialWeight: formDataToUse.initialWeightWiGWiG || formDataToUse.initialWeightWiG,
+          initialWeight: formDataToUse.initialWeightWiG,
           juvenileSize: formDataToUse.juvenileSize,
           targetFishWeight: formDataToUse.targetFishWeight,
           // Ensure live uses the immediate typed value for target number of fish
@@ -2090,9 +2201,9 @@ const CreateDesignSystem = () => {
       const payload = buildAdvancedLiveInputsPayload(step6Values);
       console.log('[AdvancedLiveCalc] Calling live API with payload:', payload);
       console.log('[AdvancedLiveCalc] Initial weight values:', {
-        initialWeightWiG: formDataToUse.initialWeightWiGWiG,
+        initialWeightWiG: formDataToUse.initialWeightWiG,
         initialWeight: formDataToUse.initialWeightWiG,
-        finalValue: formDataToUse.initialWeightWiGWiG || formDataToUse.initialWeightWiG,
+        finalValue: formDataToUse.initialWeightWiG,
         payloadValue: payload.inputs?.initial_weight_wi_g
       });
       const data = await postLiveProductionCalculations(projectId, payload);
@@ -2585,6 +2696,15 @@ const CreateDesignSystem = () => {
         console.log('designIdsRef.current:', designIdsRef.current);
         console.log('isUpdateFlow:', isUpdateFlow);
         console.log('isBackButtonScenarioRef.current:', isBackButtonScenarioRef.current);
+        
+        // Validate required fields for basic flow
+        if (calculationType === 'basic') {
+          if (!formData.targetSpecies || formData.targetSpecies.trim() === '') {
+            setError('Please select a target species before proceeding.');
+            setLoading(false);
+            return;
+          }
+        }
         
         // Check if we have existing IDs (back button scenario) or if this is a true update flow
         const hasProjectId = designIds.projectId;
@@ -3176,7 +3296,7 @@ const CreateDesignSystem = () => {
       salinity: formData.salinity || 0,
       siteElevation: formData.siteElevation || 0,
       minDO: formData.minDO || 0,
-      pH: formData.pH || 0,
+      ph: formData.ph || 0,
       maxCO2: formData.maxCO2 || 0,
       maxTAN: formData.maxTAN || 0,
       minTSS: formData.minTSS || 0,
@@ -3468,6 +3588,30 @@ const CreateDesignSystem = () => {
       });
     }
     
+    // Special handling for harvest frequency dropdown
+    if (name === 'harvestFrequency') {
+      return (
+        <Form.Group key={name} className="mb-3">
+          <OverlayTrigger
+            placement="right"
+            overlay={<Tooltip>{label} {unit ? `(${unit})` : ''}</Tooltip>}
+          >
+            <Form.Label>{label} {unit ? <span className="text-muted">({unit})</span> : ''}</Form.Label>
+          </OverlayTrigger>
+          <Form.Select
+            name={name}
+            value={formData[name] || 'Fortnightly'}
+            onChange={handleInputChange}
+            disabled={loading}
+          >
+            <option value="Fortnightly">Fortnightly</option>
+            <option value="Monthly">Monthly</option>
+            <option value="Weekly">Weekly</option>
+          </Form.Select>
+        </Form.Group>
+      );
+    }
+    
     return (
       <Form.Group key={name} className="mb-3">
         <OverlayTrigger
@@ -3520,7 +3664,7 @@ const CreateDesignSystem = () => {
                 <Form.Label>System Type</Form.Label>
                 <Form.Select name="systemType" value={formData.systemType} onChange={handleInputChange} disabled={loading}>
                   <option value="RAS">RAS</option>
-                  <option value="Flow-through">Flow-through</option>
+                  <option value="Flow-through" disabled>Flow-through (Coming Soon)</option>
                 </Form.Select>
               </Form.Group>
 
@@ -3638,11 +3782,11 @@ const CreateDesignSystem = () => {
               {renderInputWithTooltip('feedRate', 'Feed rate', '% of biomass/day')}
               {renderInputWithTooltip('feedConversionRatio', 'Feed Conversion Ratio (FCR)', '')}
               {renderInputWithTooltip('numTanks', 'Total Number of Tanks')}
-              {renderInputWithTooltip('targetNumFish', 'Target Number of fish at harvest')}
+              {renderInputWithTooltip('targetNumFish', 'Target Max Stocking Density', 'kg/m³')}
               {renderInputWithTooltip('feedProtein', 'Feed protein content', '%')}
 
               {renderInputWithTooltip('harvestFrequency', 'Harvest frequency', '', 'text')}
-              {renderInputWithTooltip('initialWeight', 'Initial weight', 'g')}
+              {renderInputWithTooltip('initialWeightWiG', 'Initial weight', 'g')}
 
               {/* Stage-wise Feed Conversion & Mortality */}
               <div className="row g-3 mt-2">
@@ -5042,7 +5186,7 @@ const CreateDesignSystem = () => {
                     <Form.Label>System Type</Form.Label>
                     <Form.Select name="systemType" value={formData.systemType} onChange={handleInputChange} disabled={loading}>
                       <option value="RAS">RAS</option>
-                      <option value="Flow-through">Flow-through</option>
+                      <option value="Flow-through" disabled>Flow-through (Coming Soon)</option>
                     </Form.Select>
                   </Form.Group>
                   <Form.Group className="mb-3">
@@ -5076,6 +5220,14 @@ const CreateDesignSystem = () => {
                     />
                   </Form.Group>
                 </div>
+                
+                {/* Error Display */}
+                {error && (
+                  <div className="alert alert-danger mt-3" role="alert">
+                    {error}
+                  </div>
+                )}
+                
                 <div className="navigation-buttons">
                   <div className="button-group-left">
                     <Button
@@ -5149,6 +5301,13 @@ const CreateDesignSystem = () => {
                         try {
                           setLoading(true);
                           setError('');
+                          
+                          // Validate required fields for advanced flow
+                          if (!formData.targetSpecies || formData.targetSpecies.trim() === '') {
+                            setError('Please select a target species before proceeding.');
+                            setLoading(false);
+                            return;
+                          }
                           
                           const apiData = {
                             designSystemName: formData.designSystemName,
@@ -5367,7 +5526,7 @@ const CreateDesignSystem = () => {
                                   {renderInputWithTooltip('numTanks', 'Total Number of Tanks', '', 'number')}
                                 </div>
                                 <div className="col-12">
-                                  {renderInputWithTooltip('targetNumFish', 'Target Number of fish at harvest', '', 'number')}
+                                  {renderInputWithTooltip('targetNumFish', 'Target Max Stocking Density', 'kg/m³', 'number')}
                                 </div>
                                 <div className="col-12">
                                   {renderInputWithTooltip('feedRate', 'Feed rate', '% of biomass/day', 'number')}
@@ -5610,7 +5769,7 @@ const CreateDesignSystem = () => {
                             },
                             production: {
                               targetSpecies: formData.targetSpecies,
-                              initialWeight: formData.initialWeightWiGWiG || formData.initialWeightWiG,
+                              initialWeight: formData.initialWeightWiG,
                               targetFishWeight: formData.targetFishWeight,
                               targetNumFish: formData.targetNumFish,
                               productionTarget_t: formData.productionTarget_t,
