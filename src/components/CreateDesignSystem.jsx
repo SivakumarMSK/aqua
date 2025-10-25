@@ -1741,7 +1741,18 @@ const CreateDesignSystem = () => {
       pump_stop_overflow_volume: stage7.pump_stop_overflow_volume ? parseFloat(stage7.pump_stop_overflow_volume) : 0,
       passive_nitrification_rate_stage1_percent: stage7.passive_nitrification_rate_stage1_percent ? parseFloat(stage7.passive_nitrification_rate_stage1_percent) : 0,
       passive_nitrification_rate_stage2_percent: stage7.passive_nitrification_rate_stage2_percent ? parseFloat(stage7.passive_nitrification_rate_stage2_percent) : 0,
-      passive_nitrification_rate_stage3_percent: stage7.passive_nitrification_rate_stage3_percent ? parseFloat(stage7.passive_nitrification_rate_stage3_percent) : 0
+      passive_nitrification_rate_stage3_percent: stage7.passive_nitrification_rate_stage3_percent ? parseFloat(stage7.passive_nitrification_rate_stage3_percent) : 0,
+
+      // Step 4 Tank Design Parameters (required for Fish Holding Tank Design)
+      num_tanks_stage1: stage7.num_tanks_stage1 ? parseInt(stage7.num_tanks_stage1) : 0,
+      num_tanks_stage2: stage7.num_tanks_stage2 ? parseInt(stage7.num_tanks_stage2) : 0,
+      num_tanks_stage3: stage7.num_tanks_stage3 ? parseInt(stage7.num_tanks_stage3) : 0,
+      tank_dd_ratio_stage1: stage7.tank_dd_ratio_stage1 ? parseFloat(stage7.tank_dd_ratio_stage1) : 0,
+      tank_dd_ratio_stage2: stage7.tank_dd_ratio_stage2 ? parseFloat(stage7.tank_dd_ratio_stage2) : 0,
+      tank_dd_ratio_stage3: stage7.tank_dd_ratio_stage3 ? parseFloat(stage7.tank_dd_ratio_stage3) : 0,
+      tank_freeboard_stage1: stage7.tank_freeboard_stage1 ? parseFloat(stage7.tank_freeboard_stage1) : 0,
+      tank_freeboard_stage2: stage7.tank_freeboard_stage2 ? parseFloat(stage7.tank_freeboard_stage2) : 0,
+      tank_freeboard_stage3: stage7.tank_freeboard_stage3 ? parseFloat(stage7.tank_freeboard_stage3) : 0
     };
     
     console.log('[Step7LiveCalc] Built flat payload:', payload);
@@ -2610,9 +2621,18 @@ const CreateDesignSystem = () => {
       // Map response to dynamic outputs
       const ready = data.fields_ready || {};
       const values = data.values || {};
+      const step4 = data.step_4 || {};
       const step7 = data.step_7 || {};
 
       const nextLive = {};
+
+      // Stage 4 Data (Tank Design)
+      if (ready.step_4 && step4) {
+        nextLive.step4 = {
+          status: 'populated',
+          data: step4
+        };
+      }
 
       // Stage 7 Data
       if (ready.step_7 && step7) {
@@ -5478,6 +5498,29 @@ const CreateDesignSystem = () => {
                           </div>
                         </div>
 
+                        {/* System Efficiency Parameters */}
+                        <div className="config-section mb-4">
+                          <div className="section-header">
+                            <h5><i className="bi bi-speedometer2 text-primary me-2"></i>System Efficiency Parameters</h5>
+                            <p className="text-muted small">Configure system efficiency and removal rates</p>
+                          </div>
+                          
+                          <div className="row g-3">
+                            <div className="col-12">
+                              {renderInputWithTooltip('o2Absorption', 'O₂ Absorption Efficiency', '%')}
+                            </div>
+                            <div className="col-12">
+                              {renderInputWithTooltip('co2Removal', 'CO₂ Removal Efficiency', '%')}
+                            </div>
+                            <div className="col-12">
+                              {renderInputWithTooltip('tssRemoval', 'TSS Removal Efficiency', '%')}
+                            </div>
+                            <div className="col-12">
+                              {renderInputWithTooltip('tanRemoval', 'TAN Removal Efficiency', '%')}
+                            </div>
+                          </div>
+                        </div>
+
                         {/* Production Parameters */}
                         <div className="config-section mb-4">
                           <div className="section-header">
@@ -5538,29 +5581,6 @@ const CreateDesignSystem = () => {
                                   {renderInputWithTooltip('feedProtein', 'Feed protein content', '%', 'number')}
                                 </div>
                               </div>
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* System Efficiency Parameters */}
-                        <div className="config-section mb-4">
-                          <div className="section-header">
-                            <h5><i className="bi bi-speedometer2 text-primary me-2"></i>System Efficiency Parameters</h5>
-                            <p className="text-muted small">Configure system efficiency and removal rates</p>
-                          </div>
-                          
-                          <div className="row g-3">
-                            <div className="col-12">
-                              {renderInputWithTooltip('o2Absorption', 'O₂ Absorption Efficiency', '%')}
-                            </div>
-                            <div className="col-12">
-                              {renderInputWithTooltip('co2Removal', 'CO₂ Removal Efficiency', '%')}
-                            </div>
-                            <div className="col-12">
-                              {renderInputWithTooltip('tssRemoval', 'TSS Removal Efficiency', '%')}
-                            </div>
-                            <div className="col-12">
-                              {renderInputWithTooltip('tanRemoval', 'TAN Removal Efficiency', '%')}
                             </div>
                           </div>
                         </div>
@@ -6171,7 +6191,7 @@ const CreateDesignSystem = () => {
                   onClick={() => setActiveReportTab('massBalance')}
                 >
                   <span className="tab-icon">⚖️</span>
-                  <span className="tab-label">Mass Balance & Stage 6</span>
+                  <span className="tab-label">Mass Balance & Controlling Flow Rate</span>
                   </div>
                   {stage7Report && (
                     <div 
@@ -6179,7 +6199,7 @@ const CreateDesignSystem = () => {
                       onClick={() => setActiveReportTab('stage7')}
                     >
                       <span className="tab-icon">🔧</span>
-                      <span className="tab-label">Stage 7</span>
+                      <span className="tab-label">Biofilter & Sump Sizing</span>
                     </div>
                   )}
                   {stage8Report && (
@@ -6188,7 +6208,7 @@ const CreateDesignSystem = () => {
                       onClick={() => setActiveReportTab('stage8')}
                     >
                       <span className="tab-icon">⚙️</span>
-                      <span className="tab-label">Stage 8</span>
+                      <span className="tab-label">Pump Sizing</span>
                     </div>
                   )}
                 </div>
@@ -6197,18 +6217,13 @@ const CreateDesignSystem = () => {
             {/* Mass Balance Report - Render in Mass Balance tab or All (even if data pending) */}
             {(activeReportTab === 'all' || activeReportTab === 'massBalance') && (
             <div className="report-cards">
-                <h4 className="mb-4 text-primary">Mass Balance & Stage 6 Report</h4>
+                <h4 className="mb-4 text-primary">Mass Balance & Controlling Flow Rate Report</h4>
                 
                 {/* Display Stage 6 Inputs */}
                 {advancedInputs && (
                   <div className="mb-4">
-                    <h5 className="mb-3 text-info">Mass Balance & Stage 6 Input Parameters</h5>
+                    <h5 className="mb-3 text-info">Mass Balance & Controlling Flow Rate Input Parameters</h5>
                     <InputsDisplay inputs={advancedInputs} />
-                  </div>
-                )}
-                {!advancedInputs && (
-                  <div className="mb-4">
-                    <p className="text-muted">Loading Mass Balance inputs...</p>
                   </div>
                 )}
                 <div className="row g-4">
@@ -6633,7 +6648,7 @@ const CreateDesignSystem = () => {
             </div>
             )}
               
-              {/* Download Buttons - Only show in report view and when Mass Balance & Stage 6 tab is visible */}
+              {/* Download Buttons - Only show in report view and when Mass Balance & Controlling Flow Rate tab is visible */}
               {isAdvancedReportView && (activeReportTab === 'all' || activeReportTab === 'massBalance') && (
                 <div className="text-center mb-4 mt-4">
                   <div className="d-flex justify-content-center gap-3 flex-wrap">
@@ -7353,8 +7368,8 @@ const CreateDesignSystem = () => {
                 </div>
               </div>
 
-              {/* Stage 3 Tank Design */}
-              <h6 className="mt-3 mb-2">Stage 3</h6>
+              {/* Growout (Stage 3) Tank Design */}
+              <h6 className="mt-3 mb-2">Growout (Stage 3)</h6>
               <div className="row g-3">
                 <div className="col-md-6 col-lg-4">
                   <Form.Group>
@@ -7435,19 +7450,15 @@ const CreateDesignSystem = () => {
             <div className="row mt-4">
               <div className="col-12">
                 <div className="stage-option-card">
-                  <div className="stage-checkbox">
-                    <Form.Check
-                      type="checkbox"
-                      id="stage8-checkbox"
-                      checked={stage8Selected}
-                      onChange={(e) => setStage8Selected(e.target.checked)}
-                      className="form-check-input"
-                    />
-                    <Form.Check.Label htmlFor="stage8-checkbox" className="form-check-label">
-                      Stage 8: Basic Pump Size Calculation
-                    </Form.Check.Label>
-                  </div>
-                  <p className="text-muted mt-2 mb-0">
+                  <Form.Check
+                    type="checkbox"
+                    id="stage8-checkbox"
+                    label="Calculate Basic Pump Size (Stage 8)"
+                    checked={stage8Selected}
+                    onChange={(e) => setStage8Selected(e.target.checked)}
+                    className="stage-checkbox"
+                  />
+                  <p className="text-muted small mt-2">
                     Calculate basic pump sizing parameters including flow rate, head pressure, and power requirements.
                   </p>
                 </div>
@@ -7497,6 +7508,12 @@ const CreateDesignSystem = () => {
                         console.log('📊 Stage 7 Form Data:', stage7FormData);
                         console.log('📊 Stage 8 Selected:', stage8Selected);
                         console.log('📊 Stored Step 6 Values:', tempStep6Values);
+                        console.log('🔍 Initial Weight Debug:', {
+                          tempStep6Values_production: tempStep6Values?.production,
+                          initialWeight: tempStep6Values?.production?.initialWeight,
+                          initialWeightWiG: tempStep6Values?.production?.initialWeightWiG,
+                          formData_initialWeightWiG: formData.initialWeightWiG
+                        });
                         
                         // First, call Step 6 APIs with stored values
                         let step6Data = null;
@@ -7529,7 +7546,7 @@ const CreateDesignSystem = () => {
 
                             // Species and production parameters
                             species: tempStep6Values.production.targetSpecies || "Nile tilapia",
-                            initial_weight_wi_g: (tempStep6Values.production.initialWeightWiG && tempStep6Values.production.initialWeightWiG.toString().trim() !== '') ? parseFloat(tempStep6Values.production.initialWeightWiG) : null,
+                            initial_weight_wi_g: (tempStep6Values.production.initialWeight && tempStep6Values.production.initialWeight.toString().trim() !== '') ? parseFloat(tempStep6Values.production.initialWeight) : null,
                             juvenile_size: (tempStep6Values.production.juvenileSize && tempStep6Values.production.juvenileSize.toString().trim() !== '') ? parseFloat(tempStep6Values.production.juvenileSize) : null,
                             target_market_fish_size: (tempStep6Values.production.targetFishWeight && tempStep6Values.production.targetFishWeight.toString().trim() !== '') ? parseFloat(tempStep6Values.production.targetFishWeight) : null,
 
@@ -7550,6 +7567,8 @@ const CreateDesignSystem = () => {
                             estimated_mortality_stage3: tempStep6Values.stageWise.Estimated_mortality_Stage3 ? parseFloat(tempStep6Values.stageWise.Estimated_mortality_Stage3) : 0
                           };
 
+                          console.log('🔍 Step 6 Payload initial_weight_wi_g:', step6Payload.initial_weight_wi_g);
+                          console.log('🔍 Full Step 6 Payload:', step6Payload);
                           const response = await postAdvancedParameters(currentProjectId, { ...step6Payload, type: 'advanced' });
                           console.log('✅ Step 6 POST Success:', response);
 

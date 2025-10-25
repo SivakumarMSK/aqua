@@ -164,7 +164,7 @@ const ProjectReport = () => {
                     <div className="tab-icon">
                       <i className="bi bi-scale"></i>
                     </div>
-                    <div className="tab-label">Mass Balance & Stage 6</div>
+                    <div className="tab-label">Mass Balance & Controlling Flow Rate</div>
                   </div>
                   {outputs.stage7Results && (
                     <div 
@@ -174,7 +174,7 @@ const ProjectReport = () => {
                       <div className="tab-icon">
                         <i className="bi bi-gear"></i>
                       </div>
-                      <div className="tab-label">Stage 7</div>
+                      <div className="tab-label">Biofilter & Sump Sizing</div>
                     </div>
                   )}
                   {outputs.stage8Results && (
@@ -185,16 +185,16 @@ const ProjectReport = () => {
                       <div className="tab-icon">
                         <i className="bi bi-lightning"></i>
                       </div>
-                      <div className="tab-label">Stage 8</div>
+                      <div className="tab-label">Pump Sizing</div>
                     </div>
                   )}
                 </div>
               </div>
 
-              {/* Mass Balance & Stage 6 Report */}
+              {/* Mass Balance & Controlling Flow Rate Report */}
               {(activeReportTab === 'all' || activeReportTab === 'massBalance') && (
                 <div className="report-cards">
-                  <h4 className="mb-4 text-primary">Mass Balance & Stage 6 Report</h4>
+                  <h4 className="mb-4 text-primary">Mass Balance & Controlling Flow Rate Report</h4>
                   
                   {/* Display Stage 6 Inputs */}
                   {advancedInputs && (

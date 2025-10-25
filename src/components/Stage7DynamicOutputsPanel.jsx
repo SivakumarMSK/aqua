@@ -48,6 +48,28 @@ const Stage7DynamicOutputsPanel = ({ formData, liveOutputs, step4Data, onFieldUp
         
         console.log(`[Stage7DynamicPanel] Processing section ${sectionKey}:`, sectionData);
         
+        // Handle Stage 4 data from live API response
+        if (sectionKey === 'step4' && sectionData.data) {
+          if (sectionData.data.stage1) {
+            next.step4Stage1 = {
+              status: sectionData.status || 'populated',
+              data: sectionData.data.stage1
+            };
+          }
+          if (sectionData.data.stage2) {
+            next.step4Stage2 = {
+              status: sectionData.status || 'populated',
+              data: sectionData.data.stage2
+            };
+          }
+          if (sectionData.data.stage3) {
+            next.step4Stage3 = {
+              status: sectionData.status || 'populated',
+              data: sectionData.data.stage3
+            };
+          }
+          return;
+        }
         
         // Map API response sections to our internal structure
         let mappedKey = sectionKey;
@@ -140,51 +162,49 @@ const Stage7DynamicOutputsPanel = ({ formData, liveOutputs, step4Data, onFieldUp
 
   return (
     <div className="dynamic-outputs-panel">
-      <h5 className="panel-title">Stage 7 Dynamic Outputs</h5>
+      <h5 className="panel-title">Dynamic Outputs</h5>
       
-      {/* Step 4 Tank Design Results */}
-      {step4Data?.data && (
-        <>
-          {/* Stage 1 Tank Design */}
-          {renderSection('Step 4: Stage 1 Tank Design', 'step4Stage1', [
-            { key: 'volumeRequiredStage1', label: 'Volume Required', unit: 'm³' },
-            { key: 'tankVolumeEachStage1', label: 'Tank Volume Each', unit: 'm³' },
-            { key: 'tankDiaStage1', label: 'Tank Diameter', unit: 'm' },
-            { key: 'tankDepthStage1', label: 'Tank Water Depth', unit: 'm' },
-            { key: 'tankTotalVolumeStage1', label: 'Total Tank Volume', unit: 'm³' }
-          ])}
+      
+      <h6>Fish Holding Tank Design</h6>
+      
+      {/* Juvenile (Stage 1) Tank Design */}
+      {renderSection('Juvenile (Stage 1) Tank Design', 'step4Stage1', [
+        { key: 'volumeRequiredStage1', label: 'Volume Required', unit: 'm³' },
+        { key: 'tankVolumeEachStage1', label: 'Tank Volume Each', unit: 'm³' },
+        { key: 'tankDiaStage1', label: 'Tank Diameter', unit: 'm' },
+        { key: 'tankDepthStage1', label: 'Tank Water Depth', unit: 'm' },
+        { key: 'tankTotalVolumeStage1', label: 'Total Tank Volume', unit: 'm³' }
+      ])}
 
-          {/* Stage 2 Tank Design */}
-          {renderSection('Step 4: Stage 2 Tank Design', 'step4Stage2', [
-            { key: 'volumeRequiredStage2', label: 'Volume Required', unit: 'm³' },
-            { key: 'tankVolumeEachStage2', label: 'Tank Volume Each', unit: 'm³' },
-            { key: 'tankDiaStage2', label: 'Tank Diameter', unit: 'm' },
-            { key: 'tankDepthStage2', label: 'Tank Water Depth', unit: 'm' },
-            { key: 'tankTotalVolumeStage2', label: 'Total Tank Volume', unit: 'm³' }
-          ])}
+      {/* Fingerling (Stage 2) Tank Design */}
+      {renderSection('Fingerling (Stage 2) Tank Design', 'step4Stage2', [
+        { key: 'volumeRequiredStage2', label: 'Volume Required', unit: 'm³' },
+        { key: 'tankVolumeEachStage2', label: 'Tank Volume Each', unit: 'm³' },
+        { key: 'tankDiaStage2', label: 'Tank Diameter', unit: 'm' },
+        { key: 'tankDepthStage2', label: 'Tank Water Depth', unit: 'm' },
+        { key: 'tankTotalVolumeStage2', label: 'Total Tank Volume', unit: 'm³' }
+      ])}
 
-          {/* Stage 3 Tank Design */}
-          {renderSection('Step 4: Stage 3 Tank Design', 'step4Stage3', [
-            { key: 'volumeRequiredStage3', label: 'Volume Required', unit: 'm³' },
-            { key: 'tankVolumeEachStage3', label: 'Tank Volume Each', unit: 'm³' },
-            { key: 'tankDiaStage3', label: 'Tank Diameter', unit: 'm' },
-            { key: 'tankDepthStage3', label: 'Tank Water Depth', unit: 'm' },
-            { key: 'tankTotalVolumeStage3', label: 'Total Tank Volume', unit: 'm³' }
-          ])}
-        </>
-      )}
+      {/* Growout (Stage 3) Tank Design */}
+      {renderSection('Growout (Stage 3) Tank Design', 'step4Stage3', [
+        { key: 'volumeRequiredStage3', label: 'Volume Required', unit: 'm³' },
+        { key: 'tankVolumeEachStage3', label: 'Tank Volume Each', unit: 'm³' },
+        { key: 'tankDiaStage3', label: 'Tank Diameter', unit: 'm' },
+        { key: 'tankDepthStage3', label: 'Tank Water Depth', unit: 'm' },
+        { key: 'tankTotalVolumeStage3', label: 'Total Tank Volume', unit: 'm³' }
+      ])}
+
+      <h6>BioFilter and Sump Sizing</h6>
       
       {/* Bio Filter Parameters */}
       {renderSection('Bio Filter Parameters', 'bioFilter', [
         { key: 'bioVTR_use', label: 'VTR Used' },
         { key: 'bio_VTR_compensation', label: 'VTR Compensation' },
-        { key: 'bio_shape', label: 'Shape' },
-        { key: 'temperature_used', label: 'Temperature Used', unit: '°C' },
-        { key: 'temp_compensation_factor', label: 'Temp Compensation Factor' }
+        { key: 'bio_shape', label: 'Shape' }
       ])}
 
-      {/* Stage 1 Results */}
-      {renderSection('Stage 1 Results', 'stage1', [
+      {/* Juvenile (Stage 1) Results */}
+      {renderSection('Juvenile (Stage 1) Results', 'stage1', [
         { key: 'DailyTAN_gday_Stage1', label: 'Daily TAN (g/day)', unit: 'g/day' },
         { key: 'DailyTANpassive_gday_Stage1', label: 'Daily TAN Passive (g/day)', unit: 'g/day' },
         { key: 'design_VTR_Stage1', label: 'Design VTR', unit: 'g/m³/day' },
@@ -203,8 +223,8 @@ const Stage7DynamicOutputsPanel = ({ formData, liveOutputs, step4Data, onFieldUp
         { key: 'vol_TotalSyst_Stage1', label: 'Total System Volume', unit: 'm³' }
       ])}
 
-      {/* Stage 2 Results */}
-      {renderSection('Stage 2 Results', 'stage2', [
+      {/* Fingerling (Stage 2) Results */}
+      {renderSection('Fingerling (Stage 2) Results', 'stage2', [
         { key: 'DailyTAN_gday_Stage2', label: 'Daily TAN (g/day)', unit: 'g/day' },
         { key: 'DailyTANpassive_gday_Stage2', label: 'Daily TAN Passive (g/day)', unit: 'g/day' },
         { key: 'design_VTR_Stage2', label: 'Design VTR', unit: 'g/m³/day' },
@@ -223,8 +243,8 @@ const Stage7DynamicOutputsPanel = ({ formData, liveOutputs, step4Data, onFieldUp
         { key: 'vol_TotalSyst_Stage2', label: 'Total System Volume', unit: 'm³' }
       ])}
 
-      {/* Stage 3 Results */}
-      {renderSection('Stage 3 Results', 'stage3', [
+      {/* Growout (Stage 3) Results */}
+      {renderSection('Growout (Stage 3) Results', 'stage3', [
         { key: 'DailyTAN_gday_Stage3', label: 'Daily TAN (g/day)', unit: 'g/day' },
         { key: 'DailyTANpassive_gday_Stage3', label: 'Daily TAN Passive (g/day)', unit: 'g/day' },
         { key: 'design_VTR_Stage3', label: 'Design VTR', unit: 'g/m³/day' },

@@ -310,6 +310,8 @@ const Stage6DynamicOutputsPanel = ({ formData, liveOutputs, onFieldUpdate, massB
         { key: 'tan.prodKgPerDay', label: 'Production (kg/day)', unit: 'kg/day' }
       ])}
 
+      <h6>Controlling Flow Rate</h6>
+      
       {/* Step 6 Results - Stage 1 */}
       {renderSection('Step 6 - Stage 1', 'step6_stage1', [
         { path: 'step_6.oxygen.l_per_min', label: 'Oxygen L/min', unit: 'L/min' },
@@ -367,6 +369,8 @@ const Stage6DynamicOutputsPanel = ({ formData, liveOutputs, onFieldUpdate, massB
         { key: 'stage3.flow_m3_per_hr', label: 'Flow Rate (m³/hr)', unit: 'm³/hr' }
       ])}
 
+      <h6>Pump Sizing</h6>
+      
       {/* Step 8 Results - Stage 1 */}
       {renderSection('Step 8 Results - Stage 1', 'stage8_stage1', [
         { key: 'stage1.limitingFlowRateStage1', label: 'Limiting Flow Rate', unit: '' },
