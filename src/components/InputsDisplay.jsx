@@ -3,7 +3,7 @@ import Card from 'react-bootstrap/Card';
 import Row from 'react-bootstrap/Row';
 import Col from 'react-bootstrap/Col';
 
-const InputsDisplay = ({ inputs, showOnlyStage7Specific = false }) => {
+const InputsDisplay = ({ inputs, showOnlyStage7Specific = false, showOnlyStage4Specific = false }) => {
   if (!inputs) {
     return null;
   }
@@ -23,8 +23,8 @@ const InputsDisplay = ({ inputs, showOnlyStage7Specific = false }) => {
       </h4>
       
       <Row className="g-3">
-        {/* Common Parameters - Only show if not Stage 7 specific only */}
-        {!showOnlyStage7Specific && (
+        {/* Common Parameters - Only show if not Stage 7 specific only or Stage 4 specific only */}
+        {!showOnlyStage7Specific && !showOnlyStage4Specific && (
           <>
             {/* Water Quality Parameters */}
             <Col md={6}>
@@ -265,7 +265,7 @@ const InputsDisplay = ({ inputs, showOnlyStage7Specific = false }) => {
         )}
 
         {/* Stage 7 Specific Parameters - Bio Filter & Sump Size */}
-        {(inputs.mbbrLocation !== undefined || inputs.mediaToWaterVolumeRatio !== undefined || inputs.volumetricNitrificationRateVtr !== undefined) && (
+        {(inputs.mbbrLocation !== undefined || inputs.mediaToWaterVolumeRatio !== undefined || inputs.volumetricNitrificationRateVtr !== undefined) && !showOnlyStage4Specific && (
           <Col md={12}>
             <Card className="h-100">
               <Card.Header>
@@ -319,7 +319,7 @@ const InputsDisplay = ({ inputs, showOnlyStage7Specific = false }) => {
         )}
 
         {/* Passive Nitrification Rates */}
-        {(inputs.passiveNitrificationRateStage1 !== undefined || inputs.passiveNitrificationRateStage2 !== undefined || inputs.passiveNitrificationRateStage3 !== undefined) && (
+        {(inputs.passiveNitrificationRateStage1 !== undefined || inputs.passiveNitrificationRateStage2 !== undefined || inputs.passiveNitrificationRateStage3 !== undefined) && !showOnlyStage4Specific && (
           <Col md={12}>
             <Card className="h-100">
               <Card.Header>
@@ -354,8 +354,8 @@ const InputsDisplay = ({ inputs, showOnlyStage7Specific = false }) => {
           </Col>
         )}
 
-        {/* Tank Design Parameters */}
-        {(inputs.numTanksStage1 !== undefined || inputs.tankDdRatioStage1 !== undefined || inputs.tankFreeboardStage1 !== undefined) && (
+        {/* Tank Design Parameters - Show for Stage 4 specific view */}
+        {(inputs.numTanksStage1 !== undefined || inputs.tankDdRatioStage1 !== undefined || inputs.tankFreeboardStage1 !== undefined) && (showOnlyStage4Specific || !showOnlyStage7Specific) && (
           <Col md={12}>
             <Card className="h-100">
               <Card.Header>
@@ -379,7 +379,7 @@ const InputsDisplay = ({ inputs, showOnlyStage7Specific = false }) => {
                           <span className="parameter-value">{formatValue(inputs.numTanksStage1)}</span>
                         </div>
                         <div className="parameter-row">
-                          <span className="parameter-label">Tank Diameter:Depth Ratio</span>
+                          <span className="parameter-label">Tank Diameter Depth Ratio</span>
                           <span className="parameter-value">{formatValue(inputs.tankDdRatioStage1)}</span>
                         </div>
                         <div className="parameter-row">
@@ -402,7 +402,7 @@ const InputsDisplay = ({ inputs, showOnlyStage7Specific = false }) => {
                           <span className="parameter-value">{formatValue(inputs.numTanksStage2)}</span>
                         </div>
                         <div className="parameter-row">
-                          <span className="parameter-label">Tank Diameter:Depth Ratio</span>
+                          <span className="parameter-label">Tank Diameter Depth Ratio</span>
                           <span className="parameter-value">{formatValue(inputs.tankDdRatioStage2)}</span>
                         </div>
                         <div className="parameter-row">
@@ -425,7 +425,7 @@ const InputsDisplay = ({ inputs, showOnlyStage7Specific = false }) => {
                           <span className="parameter-value">{formatValue(inputs.numTanksStage3)}</span>
                         </div>
                         <div className="parameter-row">
-                          <span className="parameter-label">Tank Diameter:Depth Ratio</span>
+                          <span className="parameter-label">Tank Diameter Depth Ratio</span>
                           <span className="parameter-value">{formatValue(inputs.tankDdRatioStage3)}</span>
                         </div>
                         <div className="parameter-row">

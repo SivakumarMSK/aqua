@@ -166,6 +166,28 @@ const ProjectReport = () => {
                     </div>
                     <div className="tab-label">Mass Balance & Controlling Flow Rate</div>
                   </div>
+                  {outputs.stage3Results && (
+                    <div 
+                      className={`tab-item ${activeReportTab === 'stage3' ? 'active' : ''}`}
+                      onClick={() => setActiveReportTab('stage3')}
+                    >
+                      <div className="tab-icon">
+                        <i className="bi bi-graph-up"></i>
+                      </div>
+                      <div className="tab-label">Production output</div>
+                    </div>
+                  )}
+                  {outputs.stage4Results && (
+                    <div 
+                      className={`tab-item ${activeReportTab === 'stage4' ? 'active' : ''}`}
+                      onClick={() => setActiveReportTab('stage4')}
+                    >
+                      <div className="tab-icon">
+                        <i className="bi bi-building"></i>
+                      </div>
+                      <div className="tab-label">Fish Holding Tank Design</div>
+                    </div>
+                  )}
                   {outputs.stage7Results && (
                     <div 
                       className={`tab-item ${activeReportTab === 'stage7' ? 'active' : ''}`}
@@ -199,7 +221,17 @@ const ProjectReport = () => {
                   {/* Display Stage 6 Inputs */}
                   {advancedInputs && (
                     <div className="mb-4">
-                      <InputsDisplay inputs={advancedInputs} />
+                      <InputsDisplay 
+                        inputs={{
+                          ...advancedInputs,
+                          // Remove Stage 7 specific fields for Stage 6 inputs display
+                          mbbrLocation: undefined,
+                          mediaToWaterVolumeRatio: undefined,
+                          volumetricNitrificationRateVtr: undefined,
+                          standaloneHeightDiameterRatio: undefined,
+                          pumpStopOverflowVolume: undefined
+                        }} 
+                      />
                     </div>
                   )}
                   
@@ -545,6 +577,228 @@ const ProjectReport = () => {
               )}
 
 
+              {/* Stage 3 Report - Production output */}
+              {outputs.stage3Results && (activeReportTab === 'all' || activeReportTab === 'stage3') && (
+                <div className="report-cards">
+                  <h4 className="mb-4 text-primary">Production output</h4>
+
+                  {/* Helper function to render a stage's production data */}
+                  {(() => {
+                    const renderProductionData = (stageData, stageName) => {
+                      if (!stageData || typeof stageData !== 'object') return null;
+                      
+                      return (
+                        <div className="row g-3 mb-3">
+                          {Object.entries(stageData).map(([key, value]) => {
+                            // Skip null, undefined values
+                            if (value === null || value === undefined) return null;
+                            
+                            // Skip nested objects (we'll render them separately if needed)
+                            if (typeof value === 'object' && !Array.isArray(value)) return null;
+                            
+                            // Format the key for display
+                            const formattedKey = key
+                              .replace(/_/g, ' ')
+                              .replace(/\b\w/g, l => l.toUpperCase());
+                            
+                            // Format the value
+                            let formattedValue = value;
+                            if (typeof value === 'number') {
+                              formattedValue = value.toFixed(2);
+                            } else if (Array.isArray(value)) {
+                              formattedValue = value.join(', ');
+                            }
+                            
+                            return (
+                              <div key={key} className="col-md-6">
+                                <div className="metric-row">
+                                  <span className="label">{formattedKey}</span>
+                                  <strong>{formattedValue}</strong>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      );
+                    };
+
+                    return (
+                      <>
+                        {outputs.stage3Results.stage1 && (
+                          <div className="mb-4">
+                            <Card className="shadow-sm">
+                              <Card.Header>
+                                <h5 className="mb-0">Juvenile (Stage 1) Production</h5>
+                              </Card.Header>
+                              <Card.Body>
+                                {renderProductionData(outputs.stage3Results.stage1, 'Stage 1')}
+                              </Card.Body>
+                            </Card>
+                          </div>
+                        )}
+                        {outputs.stage3Results.stage2 && (
+                          <div className="mb-4">
+                            <Card className="shadow-sm">
+                              <Card.Header>
+                                <h5 className="mb-0">Fingerling (Stage 2) Production</h5>
+                              </Card.Header>
+                              <Card.Body>
+                                {renderProductionData(outputs.stage3Results.stage2, 'Stage 2')}
+                              </Card.Body>
+                            </Card>
+                          </div>
+                        )}
+                        {outputs.stage3Results.stage3 && (
+                          <div className="mb-4">
+                            <Card className="shadow-sm">
+                              <Card.Header>
+                                <h5 className="mb-0">Growout (Stage 3) Production</h5>
+                              </Card.Header>
+                              <Card.Body>
+                                {renderProductionData(outputs.stage3Results.stage3, 'Stage 3')}
+                              </Card.Body>
+                            </Card>
+                          </div>
+                        )}
+                      </>
+                    );
+                  })()}
+                </div>
+              )}
+
+              {/* Stage 4 Report - Fish Holding Tank Design */}
+              {outputs.stage4Results && (activeReportTab === 'all' || activeReportTab === 'stage4') && (
+                <div className="report-cards">
+                  <h4 className="mb-4 text-primary">Fish Holding Tank Design Report</h4>
+                  
+                  {/* Display Stage 4 Inputs */}
+                  {inputs && (
+                    <div className="mb-4">
+                      <InputsDisplay inputs={inputs} showOnlyStage4Specific={true} />
+                    </div>
+                  )}
+                  
+                  <div className="row g-4">
+                    {/* Stage 1 Results */}
+                    {outputs.stage4Results.stage1 && (
+                      <div className="col-12">
+                        <Card className="mb-3">
+                          <Card.Header>
+                            <h5 className="mb-0">Juvenile (Stage 1) Tank Design</h5>
+                          </Card.Header>
+                          <Card.Body>
+                            <div className="row">
+                              <div className="col-md-6">
+                                <div className="metric-row">
+                                  <span className="label">Tank Depth (m)</span>
+                                  <strong>{outputs.stage4Results.stage1.tankDepthStage1?.toFixed(2) ?? '-'}</strong>
+                                </div>
+                                <div className="metric-row">
+                                  <span className="label">Tank Diameter (m)</span>
+                                  <strong>{outputs.stage4Results.stage1.tankDiaStage1?.toFixed(2) ?? '-'}</strong>
+                                </div>
+                              </div>
+                              <div className="col-md-6">
+                                <div className="metric-row">
+                                  <span className="label">Tank Total Volume (m³)</span>
+                                  <strong>{outputs.stage4Results.stage1.tankTotalVolumeStage1?.toFixed(2) ?? '-'}</strong>
+                                </div>
+                                <div className="metric-row">
+                                  <span className="label">Tank Volume Each (m³)</span>
+                                  <strong>{outputs.stage4Results.stage1.tankVolumeEachStage1?.toFixed(2) ?? '-'}</strong>
+                                </div>
+                                <div className="metric-row">
+                                  <span className="label">Volume Required (m³)</span>
+                                  <strong>{outputs.stage4Results.stage1.volumeRequiredStage1?.toFixed(2) ?? '-'}</strong>
+                                </div>
+                              </div>
+                            </div>
+                          </Card.Body>
+                        </Card>
+                      </div>
+                    )}
+
+                    {/* Stage 2 Results */}
+                    {outputs.stage4Results.stage2 && (
+                      <div className="col-12">
+                        <Card className="mb-3">
+                          <Card.Header>
+                            <h5 className="mb-0">Fingerling (Stage 2) Tank Design</h5>
+                          </Card.Header>
+                          <Card.Body>
+                            <div className="row">
+                              <div className="col-md-6">
+                                <div className="metric-row">
+                                  <span className="label">Tank Depth (m)</span>
+                                  <strong>{outputs.stage4Results.stage2.tankDepthStage2?.toFixed(2) ?? '-'}</strong>
+                                </div>
+                                <div className="metric-row">
+                                  <span className="label">Tank Diameter (m)</span>
+                                  <strong>{outputs.stage4Results.stage2.tankDiaStage2?.toFixed(2) ?? '-'}</strong>
+                                </div>
+                              </div>
+                              <div className="col-md-6">
+                                <div className="metric-row">
+                                  <span className="label">Tank Total Volume (m³)</span>
+                                  <strong>{outputs.stage4Results.stage2.tankTotalVolumeStage2?.toFixed(2) ?? '-'}</strong>
+                                </div>
+                                <div className="metric-row">
+                                  <span className="label">Tank Volume Each (m³)</span>
+                                  <strong>{outputs.stage4Results.stage2.tankVolumeEachStage2?.toFixed(2) ?? '-'}</strong>
+                                </div>
+                                <div className="metric-row">
+                                  <span className="label">Volume Required (m³)</span>
+                                  <strong>{outputs.stage4Results.stage2.volumeRequiredStage2?.toFixed(2) ?? '-'}</strong>
+                                </div>
+                              </div>
+                            </div>
+                          </Card.Body>
+                        </Card>
+                      </div>
+                    )}
+
+                    {/* Stage 3 Results */}
+                    {outputs.stage4Results.stage3 && (
+                      <div className="col-12">
+                        <Card className="mb-3">
+                          <Card.Header>
+                            <h5 className="mb-0">Growout (Stage 3) Tank Design</h5>
+                          </Card.Header>
+                          <Card.Body>
+                            <div className="row">
+                              <div className="col-md-6">
+                                <div className="metric-row">
+                                  <span className="label">Tank Depth (m)</span>
+                                  <strong>{outputs.stage4Results.stage3.tankDepthStage3?.toFixed(2) ?? '-'}</strong>
+                                </div>
+                                <div className="metric-row">
+                                  <span className="label">Tank Diameter (m)</span>
+                                  <strong>{outputs.stage4Results.stage3.tankDiaStage3?.toFixed(2) ?? '-'}</strong>
+                                </div>
+                              </div>
+                              <div className="col-md-6">
+                                <div className="metric-row">
+                                  <span className="label">Tank Total Volume (m³)</span>
+                                  <strong>{outputs.stage4Results.stage3.tankTotalVolumeStage3?.toFixed(2) ?? '-'}</strong>
+                                </div>
+                                <div className="metric-row">
+                                  <span className="label">Tank Volume Each (m³)</span>
+                                  <strong>{outputs.stage4Results.stage3.tankVolumeEachStage3?.toFixed(2) ?? '-'}</strong>
+                                </div>
+                                <div className="metric-row">
+                                  <span className="label">Volume Required (m³)</span>
+                                  <strong>{outputs.stage4Results.stage3.volumeRequiredStage3?.toFixed(2) ?? '-'}</strong>
+                                </div>
+                              </div>
+                            </div>
+                          </Card.Body>
+                        </Card>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
               {/* Stage 7 Report */}
               {outputs.stage7Results && (activeReportTab === 'all' || activeReportTab === 'stage7') && (
                 <div className="report-cards">
@@ -823,7 +1077,15 @@ const ProjectReport = () => {
             </div>
           ) : (
             // Basic Project Report (Mass Balance)
-          <div className="row g-4">
+          <div>
+            {/* Display Inputs for Basic Report */}
+            {inputs && (
+              <div className="mb-4">
+                <InputsDisplay inputs={inputs} />
+              </div>
+            )}
+            
+            <div className="row g-4">
             <div className="col-md-6">
               <Card className="report-card oxygen-card h-100">
                 <Card.Body>
@@ -963,6 +1225,7 @@ const ProjectReport = () => {
                 })()}
               </div>
             )}
+            </div>
           </div>
           )}
         </div>

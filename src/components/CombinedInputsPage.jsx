@@ -2,6 +2,10 @@ import React from 'react';
 import { Button, Form, Card, Row, Col } from 'react-bootstrap';
 import DynamicOutputsPanel from './DynamicOutputsPanel';
 
+// Feature flag to show/hide live calculation panels in UI (while keeping logic working)
+// Set to true to show live calculation panels, false to hide them
+const SHOW_LIVE_CALCULATIONS = false;
+
 const CombinedInputsPage = ({ 
   formData, 
   liveOutputs,
@@ -16,7 +20,7 @@ const CombinedInputsPage = ({
     <div className="combined-inputs-page">
       <Row className="g-4">
         {/* Left Column - Input Forms */}
-        <Col lg={6}>
+        <Col lg={SHOW_LIVE_CALCULATIONS ? 6 : 12}>
           <div className="inputs-column">
             {/* Water Quality Section */}
             <Card className="mb-4">
@@ -117,18 +121,20 @@ const CombinedInputsPage = ({
         </Col>
 
         {/* Right Column - Dynamic Outputs */}
-        <Col lg={6}>
-          <div className="outputs-column">
-            <DynamicOutputsPanel 
-              formData={formData} 
-              liveOutputs={liveOutputs}
-              onFieldUpdate={(section, data, status) => {
-                // This will be used for real-time updates when polling APIs are ready
-                console.log('Field update:', section, data, status);
-              }}
-            />
-          </div>
-        </Col>
+        {SHOW_LIVE_CALCULATIONS && (
+          <Col lg={6}>
+            <div className="outputs-column">
+              <DynamicOutputsPanel 
+                formData={formData} 
+                liveOutputs={liveOutputs}
+                onFieldUpdate={(section, data, status) => {
+                  // This will be used for real-time updates when polling APIs are ready
+                  console.log('Field update:', section, data, status);
+                }}
+              />
+            </div>
+          </Col>
+        )}
       </Row>
 
       {/* Error Display */}

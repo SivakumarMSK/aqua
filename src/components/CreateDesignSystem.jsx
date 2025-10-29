@@ -15,6 +15,10 @@ import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import Toast from './Toast';
 
+// Feature flag to show/hide live calculation panels in UI (while keeping logic working)
+// Set to true to show live calculation panels, false to hide them
+const SHOW_LIVE_CALCULATIONS = false;
+
 // Prevent scroll behavior on number inputs
 const preventNumberInputScroll = () => {
   // Disable scroll wheel events on number inputs
@@ -118,6 +122,110 @@ const getStage7Results = async (projectId) => {
   } catch (error) {
     console.error('Stage 7 Results API error:', error);
     return { status: 'error', message: error.message };
+  }
+};
+
+// Step 4 API functions
+const postStep4Parameters = async (projectId, payload) => {
+  try {
+    const token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
+    if (!token) {
+      throw new Error('Authentication token not found');
+    }
+
+    console.log('📤 Step 4 POST Payload:', payload);
+
+    const response = await fetch(`/backend/advanced/formulas/api/projects/${projectId}/step4`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      },
+      body: JSON.stringify(payload)
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Step 4 API error response:', errorText);
+      throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
+    }
+
+    const data = await response.json();
+    return { status: 'success', data };
+  } catch (error) {
+    console.error('Step 4 API error:', error);
+    return { status: 'error', message: error.message };
+  }
+};
+
+const getStep4Results = async (projectId) => {
+  try {
+    const token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
+    if (!token) {
+      throw new Error('Authentication token not found');
+    }
+
+    console.log('🔍 Step 4 GET API Debug:');
+    console.log('  Project ID:', projectId);
+    
+    const url = `/backend/advanced/formulas/api/projects/${projectId}/step4`;
+    console.log('  Full URL:', url);
+
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Accept': 'application/json',
+        'Content-Type': 'application/json'
+      }
+    });
+
+    console.log('  Response status:', response.status);
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('  Error response:', errorText);
+      throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
+    }
+
+    const data = await response.json();
+    console.log('  Response data:', data);
+    return { status: 'success', data };
+  } catch (error) {
+    console.error('Step 4 Results API error:', error);
+    return { status: 'error', message: error.message };
+  }
+};
+
+// Step 3 API function (GET only)
+const getStep3Results = async (projectId) => {
+  try {
+    const token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
+    if (!token) {
+      throw new Error('Authentication token not found');
+    }
+
+    const url = `/backend/advanced/formulas/api/projects/${projectId}/step3`;
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Accept': 'application/json',
+        'Content-Type': 'application/json'
+      }
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
+    }
+
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error('Step 3 GET API error:', error);
+    throw error;
   }
 };
 
@@ -302,6 +410,8 @@ const CreateDesignSystem = () => {
   const [advancedInputs, setAdvancedInputs] = useState(null);
   // Stage 7 specific inputs (different from Stage 6 inputs)
   const [stage7Inputs, setStage7Inputs] = useState(null);
+  // Step 4 specific inputs (Tank Design parameters)
+  const [stage4Inputs, setStage4Inputs] = useState(null);
 
   // Helper to map water quality GET API response to InputsDisplay format for Stage 6/Mass Balance
   const mapWaterQualityToInputs = (inputsData) => {
@@ -405,7 +515,7 @@ const CreateDesignSystem = () => {
 
   // Fetch and set advancedInputs when entering report view or switching to relevant tabs
   useEffect(() => {
-    const shouldShowInputs = activeReportTab === 'massBalance' || activeReportTab === 'stage7';
+    const shouldShowInputs = activeReportTab === 'massBalance' || activeReportTab === 'stage7' || activeReportTab === 'stage4' || activeReportTab === 'stage3';
     if (!shouldShowInputs) return;
 
     const currentProjectId = localStorage.getItem('currentProjectId');
@@ -424,6 +534,13 @@ const CreateDesignSystem = () => {
           } else if (activeReportTab === 'stage7') {
             const mapped = mapWaterQualityToStage7Inputs(res.data);
             setStage7Inputs(mapped);
+          } else if (activeReportTab === 'stage4') {
+            const mapped = mapWaterQualityToStage7Inputs(res.data);
+            setStage4Inputs(mapped);
+          } else if (activeReportTab === 'stage3') {
+            const mapped = mapWaterQualityToInputs(res.data);
+            // Stage 3 uses general inputs display
+            setAdvancedInputs(mapped);
           }
         } else {
           console.warn('Failed to load water quality inputs:', res);
@@ -722,6 +839,8 @@ const CreateDesignSystem = () => {
   // Stage 7 and Stage 8 selection states
   const [stage7Selected, setStage7Selected] = useState(false);
   const [stage8Selected, setStage8Selected] = useState(false);
+  const [stage3Report, setStage3Report] = useState(null);
+  const [stage4Report, setStage4Report] = useState(null);
   const [stage7Report, setStage7Report] = useState(null);
   const [stage8Report, setStage8Report] = useState(null);
 
@@ -2031,8 +2150,9 @@ const CreateDesignSystem = () => {
       console.error('Live calculations error:', err);
 
       // If backend says species missing, try to persist species once and retry
+      // BUT: Skip this for basic flow to prevent POST API calls before "Calculate Mass Balance" button
       const message = String(err && err.message || '');
-      if (message.includes('Species not specified in project')) {
+      if (message.includes('Species not specified in project') && calculationType === 'advanced') {
         try {
           const species = (formData.targetSpecies || '').trim();
           if (species) {
@@ -2068,17 +2188,25 @@ const CreateDesignSystem = () => {
         } catch (persistErr) {
           console.warn('[LiveCalc] Species persist failed on retry path:', persistErr);
         }
+      } else if (calculationType === 'basic') {
+        console.warn('[LiveCalc] Basic flow: skipping POST API call (will only be called when Calculate Mass Balance is clicked)');
+        // For basic flow, just return without showing error state
+        // The live calculations won't work until water quality is posted via handleBasicCalculate
+        return;
       }
-      // Show error state on all sections for now
-      setLiveOutputs({
-        oxygen: { status: 'error', data: null },
-        tss: { status: 'error', data: null },
-        co2: { status: 'error', data: null },
-        tan: { status: 'error', data: null },
-        stage6: { status: 'error', data: null },
-        stage8: { status: 'error', data: null },
-        limitingFactor: { status: 'error', data: null }
-      });
+      
+      // Show error state on all sections for advanced flow only
+      if (calculationType === 'advanced') {
+        setLiveOutputs({
+          oxygen: { status: 'error', data: null },
+          tss: { status: 'error', data: null },
+          co2: { status: 'error', data: null },
+          tan: { status: 'error', data: null },
+          stage6: { status: 'error', data: null },
+          stage8: { status: 'error', data: null },
+          limitingFactor: { status: 'error', data: null }
+        });
+      }
     }
   };
 
@@ -2101,43 +2229,13 @@ const CreateDesignSystem = () => {
         return;
       }
 
-      // Ensure species is persisted to project before live calculations
-      // In update mode, species might already be in the project, so we can try the live call
+      // NOTE: Advanced flow should NOT call POST API during live calculations
+      // POST API will only be called when "Calculate Advanced Report" button is clicked
+      // So we skip the species persistence in live calculations for advanced flow
       if (species && !speciesSavedRef.current && !isUpdateFlow) {
-        try {
-          const waterQualityPayload = {
-            maxTAN: formDataToUse.maxTAN,
-            minTSS: formDataToUse.minTSS,
-            maxCO2: formDataToUse.maxCO2,
-            minDO: formDataToUse.minDO,
-            siteElevation: formDataToUse.siteElevation,
-            ph: formDataToUse.ph,
-            salinity: formDataToUse.salinity,
-            targetSpecies: species,
-            waterTemp: formDataToUse.waterTemp,
-            useRecommendedValues: formDataToUse.useRecommendedValues,
-            type: 'advanced',
-            numTanks: formDataToUse.numTanks,
-            tankVolume: formDataToUse.tankVolume,
-            feedRate: formDataToUse.feedRate,
-            feedConversionRatio: formDataToUse.feedConversionRatio,
-            targetFishWeight: formDataToUse.targetFishWeight,
-            targetNumFish: formDataToUse.targetNumFish,
-            feedProtein: formDataToUse.feedProtein,
-            // Include efficiency parameters
-            o2Absorption: formDataToUse.o2Absorption,
-            co2Removal: formDataToUse.co2Removal,
-            tanRemoval: formDataToUse.tanRemoval,
-            tssRemoval: formDataToUse.tssRemoval
-          };
-          await createWaterQualityParameters(waterQualityPayload);
-          speciesSavedRef.current = true;
-          console.log('[AdvancedLiveCalc] Species saved to project for live calculations');
-        } catch (persistErr) {
-          console.warn('[AdvancedLiveCalc] Failed to persist species to project:', persistErr);
-          // If species persistence fails, skip the live calculation
-          return;
-        }
+        console.warn('[AdvancedLiveCalc] Skipping POST API call during live calculations (will only be called when Calculate Advanced Report is clicked)');
+        // Just mark as saved to allow live calculations to proceed
+        speciesSavedRef.current = true;
       }
 
       // If no species is available, skip the live calculation
@@ -2533,43 +2631,14 @@ const CreateDesignSystem = () => {
         return;
       }
 
-      // Ensure species is persisted to project before live calculations
+      // NOTE: Advanced flow should NOT call POST API during live calculations
+      // POST API will only be called when "Calculate Advanced Report" button is clicked
+      // So we skip the species persistence in live calculations
       const species = (tempStep6Values.production?.targetSpecies || '').trim();
       if (species && !speciesSavedRef.current) {
-        try {
-          const waterQualityPayload = {
-            maxTAN: tempStep6Values.waterQuality?.maxTAN,
-            minTSS: tempStep6Values.waterQuality?.minTSS,
-            maxCO2: tempStep6Values.waterQuality?.maxCO2,
-            minDO: tempStep6Values.waterQuality?.minDO,
-            siteElevation: tempStep6Values.waterQuality?.siteElevation,
-            ph: tempStep6Values.waterQuality?.ph,
-            salinity: tempStep6Values.waterQuality?.salinity,
-            targetSpecies: species,
-            waterTemp: tempStep6Values.waterQuality?.waterTemp,
-            useRecommendedValues: formDataToUse.useRecommendedValues,
-            type: 'advanced',
-            numTanks: tempStep6Values.production?.numTanks,
-            tankVolume: tempStep6Values.production?.tankVolume,
-            feedRate: tempStep6Values.production?.feedRate,
-            feedConversionRatio: tempStep6Values.production?.feedConversionRatio,
-            targetFishWeight: tempStep6Values.production?.targetFishWeight,
-            targetNumFish: tempStep6Values.production?.targetNumFish,
-            feedProtein: tempStep6Values.production?.feedProtein,
-            // Include efficiency parameters
-            o2Absorption: tempStep6Values.systemEfficiency?.o2Absorption,
-            co2Removal: tempStep6Values.systemEfficiency?.co2Removal,
-            tanRemoval: tempStep6Values.systemEfficiency?.tanRemoval,
-            tssRemoval: tempStep6Values.systemEfficiency?.tssRemoval
-          };
-          await createWaterQualityParameters(waterQualityPayload);
-          speciesSavedRef.current = true;
-          console.log('[AdvancedStage7LiveCalc] Species saved to project for live calculations');
-        } catch (persistErr) {
-          console.warn('[AdvancedStage7LiveCalc] Failed to persist species to project:', persistErr);
-          // If species persistence fails, skip the live calculation
-          return;
-        }
+        console.warn('[AdvancedStage7LiveCalc] Skipping POST API call during live calculations (will only be called when Calculate Advanced Report is clicked)');
+        // Just mark as saved to allow live calculations to proceed
+        speciesSavedRef.current = true;
       }
 
       // If no species is available, skip the live calculation
@@ -5434,7 +5503,7 @@ const CreateDesignSystem = () => {
                 <div className="combined-inputs-page">
                   <Row className="g-4 align-items-start">
                     {/* Left Column - Stage 6 Inputs (equal width) */}
-                    <Col lg={6}>
+                    <Col lg={SHOW_LIVE_CALCULATIONS ? 6 : 12}>
                       <div className="inputs-column">
                         <style>{`
                           /* Mirror basic dynamic inputs: single vertical column */
@@ -5629,18 +5698,20 @@ const CreateDesignSystem = () => {
                     </Col>
                     
                     {/* Right Column - Dynamic Outputs (equal width) */}
-                    <Col lg={6}>
-                      <div className="outputs-column stage7-dynamic-panel">
-                        <Stage6DynamicOutputsPanel
-                          formData={formData}
-                          liveOutputs={dynamicStage6}
-                          onFieldUpdate={() => {}}
-                          massBalanceData={dynamicStage6.massBalance?.data || advancedReport?.massBalanceData}
-                          limitingFactor={dynamicStage6.limitingFactor?.data || limitingFactor}
-                          stage8Report={dynamicStage6.stage8?.data || stage8Report}
-                        />
-                      </div>
-                    </Col>
+                    {SHOW_LIVE_CALCULATIONS && (
+                      <Col lg={6}>
+                        <div className="outputs-column stage7-dynamic-panel">
+                          <Stage6DynamicOutputsPanel
+                            formData={formData}
+                            liveOutputs={dynamicStage6}
+                            onFieldUpdate={() => {}}
+                            massBalanceData={dynamicStage6.massBalance?.data || advancedReport?.massBalanceData}
+                            limitingFactor={dynamicStage6.limitingFactor?.data || limitingFactor}
+                            stage8Report={dynamicStage6.stage8?.data || stage8Report}
+                          />
+                        </div>
+                      </Col>
+                    )}
                   </Row>
                 </div>
               </div>
@@ -6193,6 +6264,24 @@ const CreateDesignSystem = () => {
                   <span className="tab-icon">⚖️</span>
                   <span className="tab-label">Mass Balance & Controlling Flow Rate</span>
                   </div>
+                  {stage3Report && (
+                    <div 
+                      className={`tab-item ${activeReportTab === 'stage3' ? 'active' : ''}`}
+                      onClick={() => setActiveReportTab('stage3')}
+                    >
+                      <span className="tab-icon">📈</span>
+                      <span className="tab-label">Production output</span>
+                    </div>
+                  )}
+                  {stage4Report && (
+                    <div 
+                      className={`tab-item ${activeReportTab === 'stage4' ? 'active' : ''}`}
+                      onClick={() => setActiveReportTab('stage4')}
+                    >
+                      <span className="tab-icon">🏗️</span>
+                      <span className="tab-label">Fish Holding Tank Design</span>
+                    </div>
+                  )}
                   {stage7Report && (
                     <div 
                       className={`tab-item ${activeReportTab === 'stage7' ? 'active' : ''}`}
@@ -6704,6 +6793,234 @@ const CreateDesignSystem = () => {
                 </div>
               )}
 
+          {/* Stage 3 Report - Production output */}
+          {stage3Report && (activeReportTab === 'all' || activeReportTab === 'stage3') && (
+            <div className="report-cards">
+              <h4 className="mb-4 text-primary">Production output</h4>
+
+              {/* Helper function to render a stage's production data */}
+              {(() => {
+                const renderProductionData = (stageData, stageName) => {
+                  if (!stageData || typeof stageData !== 'object') return null;
+                  
+                  return (
+                    <div className="row g-3 mb-3">
+                      {Object.entries(stageData).map(([key, value]) => {
+                        // Skip null, undefined values
+                        if (value === null || value === undefined) return null;
+                        
+                        // Skip nested objects (we'll render them separately if needed)
+                        if (typeof value === 'object' && !Array.isArray(value)) return null;
+                        
+                        // Format the key for display
+                        const formattedKey = key
+                          .replace(/_/g, ' ')
+                          .replace(/\b\w/g, l => l.toUpperCase());
+                        
+                        // Format the value
+                        let formattedValue = value;
+                        if (typeof value === 'number') {
+                          formattedValue = value.toFixed(2);
+                        } else if (Array.isArray(value)) {
+                          formattedValue = value.join(', ');
+                        }
+                        
+                        return (
+                          <div key={key} className="col-md-6">
+                            <div className="metric-row">
+                              <span className="label">{formattedKey}</span>
+                              <strong>{formattedValue}</strong>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  );
+                };
+
+                return (
+                  <>
+                    {stage3Report.stage1 && (
+                      <div className="mb-4">
+                        <Card className="shadow-sm">
+                          <Card.Header>
+                            <h5 className="mb-0">Juvenile (Stage 1) Production</h5>
+                          </Card.Header>
+                          <Card.Body>
+                            {renderProductionData(stage3Report.stage1, 'Stage 1')}
+                          </Card.Body>
+                        </Card>
+                      </div>
+                    )}
+                    {stage3Report.stage2 && (
+                      <div className="mb-4">
+                        <Card className="shadow-sm">
+                          <Card.Header>
+                            <h5 className="mb-0">Fingerling (Stage 2) Production</h5>
+                          </Card.Header>
+                          <Card.Body>
+                            {renderProductionData(stage3Report.stage2, 'Stage 2')}
+                          </Card.Body>
+                        </Card>
+                      </div>
+                    )}
+                    {stage3Report.stage3 && (
+                      <div className="mb-4">
+                        <Card className="shadow-sm">
+                          <Card.Header>
+                            <h5 className="mb-0">Growout (Stage 3) Production</h5>
+                          </Card.Header>
+                          <Card.Body>
+                            {renderProductionData(stage3Report.stage3, 'Stage 3')}
+                          </Card.Body>
+                        </Card>
+                      </div>
+                    )}
+                  </>
+                );
+              })()}
+            </div>
+          )}
+
+            {/* Stage 4 Report - Fish Holding Tank Design */}
+            {stage4Report && (activeReportTab === 'all' || activeReportTab === 'stage4') && (
+              <div className="report-cards">
+                <h4 className="mb-4 text-primary">Fish Holding Tank Design Report</h4>
+                
+                {/* Display Step 4 Inputs */}
+                {stage4Inputs && (
+                  <div className="mb-4">
+                    <h5 className="mb-3 text-info">Step 4 Input Parameters</h5>
+                    <InputsDisplay inputs={stage4Inputs} showOnlyStage4Specific={true} />
+                  </div>
+                )}
+                {!stage4Inputs && (
+                  <div className="mb-4">
+                    <p className="text-muted">Loading Step 4 inputs...</p>
+                  </div>
+                )}
+                
+                <div className="row g-4">
+                  {/* Stage 1 Results */}
+                  {stage4Report.stage1 && (
+                    <div className="col-12">
+                      <Card className="mb-3">
+                        <Card.Header>
+                          <h5 className="mb-0">Juvenile (Stage 1) Tank Design</h5>
+                        </Card.Header>
+                        <Card.Body>
+                          <div className="row">
+                            <div className="col-md-6">
+                              <div className="metric-row">
+                                <span className="label">Tank Depth (m)</span>
+                                <strong>{stage4Report.stage1.tankDepthStage1?.toFixed(2) ?? '-'}</strong>
+                              </div>
+                              <div className="metric-row">
+                                <span className="label">Tank Diameter (m)</span>
+                                <strong>{stage4Report.stage1.tankDiaStage1?.toFixed(2) ?? '-'}</strong>
+                              </div>
+                            </div>
+                            <div className="col-md-6">
+                              <div className="metric-row">
+                                <span className="label">Tank Total Volume (m³)</span>
+                                <strong>{stage4Report.stage1.tankTotalVolumeStage1?.toFixed(2) ?? '-'}</strong>
+                              </div>
+                              <div className="metric-row">
+                                <span className="label">Tank Volume Each (m³)</span>
+                                <strong>{stage4Report.stage1.tankVolumeEachStage1?.toFixed(2) ?? '-'}</strong>
+                              </div>
+                              <div className="metric-row">
+                                <span className="label">Volume Required (m³)</span>
+                                <strong>{stage4Report.stage1.volumeRequiredStage1?.toFixed(2) ?? '-'}</strong>
+                              </div>
+                            </div>
+                          </div>
+                        </Card.Body>
+                      </Card>
+                    </div>
+                  )}
+
+                  {/* Stage 2 Results */}
+                  {stage4Report.stage2 && (
+                    <div className="col-12">
+                      <Card className="mb-3">
+                        <Card.Header>
+                          <h5 className="mb-0">Fingerling (Stage 2) Tank Design</h5>
+                        </Card.Header>
+                        <Card.Body>
+                          <div className="row">
+                            <div className="col-md-6">
+                              <div className="metric-row">
+                                <span className="label">Tank Depth (m)</span>
+                                <strong>{stage4Report.stage2.tankDepthStage2?.toFixed(2) ?? '-'}</strong>
+                              </div>
+                              <div className="metric-row">
+                                <span className="label">Tank Diameter (m)</span>
+                                <strong>{stage4Report.stage2.tankDiaStage2?.toFixed(2) ?? '-'}</strong>
+                              </div>
+                            </div>
+                            <div className="col-md-6">
+                              <div className="metric-row">
+                                <span className="label">Tank Total Volume (m³)</span>
+                                <strong>{stage4Report.stage2.tankTotalVolumeStage2?.toFixed(2) ?? '-'}</strong>
+                              </div>
+                              <div className="metric-row">
+                                <span className="label">Tank Volume Each (m³)</span>
+                                <strong>{stage4Report.stage2.tankVolumeEachStage2?.toFixed(2) ?? '-'}</strong>
+                              </div>
+                              <div className="metric-row">
+                                <span className="label">Volume Required (m³)</span>
+                                <strong>{stage4Report.stage2.volumeRequiredStage2?.toFixed(2) ?? '-'}</strong>
+                              </div>
+                            </div>
+                          </div>
+                        </Card.Body>
+                      </Card>
+                    </div>
+                  )}
+
+                  {/* Stage 3 Results */}
+                  {stage4Report.stage3 && (
+                    <div className="col-12">
+                      <Card className="mb-3">
+                        <Card.Header>
+                          <h5 className="mb-0">Growout (Stage 3) Tank Design</h5>
+                        </Card.Header>
+                        <Card.Body>
+                          <div className="row">
+                            <div className="col-md-6">
+                              <div className="metric-row">
+                                <span className="label">Tank Depth (m)</span>
+                                <strong>{stage4Report.stage3.tankDepthStage3?.toFixed(2) ?? '-'}</strong>
+                              </div>
+                              <div className="metric-row">
+                                <span className="label">Tank Diameter (m)</span>
+                                <strong>{stage4Report.stage3.tankDiaStage3?.toFixed(2) ?? '-'}</strong>
+                              </div>
+                            </div>
+                            <div className="col-md-6">
+                              <div className="metric-row">
+                                <span className="label">Tank Total Volume (m³)</span>
+                                <strong>{stage4Report.stage3.tankTotalVolumeStage3?.toFixed(2) ?? '-'}</strong>
+                              </div>
+                              <div className="metric-row">
+                                <span className="label">Tank Volume Each (m³)</span>
+                                <strong>{stage4Report.stage3.tankVolumeEachStage3?.toFixed(2) ?? '-'}</strong>
+                              </div>
+                              <div className="metric-row">
+                                <span className="label">Volume Required (m³)</span>
+                                <strong>{stage4Report.stage3.volumeRequiredStage3?.toFixed(2) ?? '-'}</strong>
+                              </div>
+                            </div>
+                          </div>
+                        </Card.Body>
+                      </Card>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
             {/* Stage 7 Report - Bio Filter & Sump Size */}
             {stage7Report && (activeReportTab === 'all' || activeReportTab === 'stage7') && (
               <div className="report-cards">
@@ -7112,7 +7429,7 @@ const CreateDesignSystem = () => {
             <div className="combined-inputs-page">
               <Row className="g-4">
                 {/* Left Column - Stage 7 Inputs (equal width) */}
-                <Col lg={6}>
+                <Col lg={SHOW_LIVE_CALCULATIONS ? 6 : 12}>
                   <div className="inputs-column">
                     <style>{`
                       /* Mirror basic dynamic inputs: single vertical column */
@@ -7433,16 +7750,18 @@ const CreateDesignSystem = () => {
                 </Col>
                 
                 {/* Right Column - Dynamic Outputs (equal width) */}
-                <Col lg={6}>
-                  <div className="outputs-column">
-                    <Stage7DynamicOutputsPanel 
-                      formData={stage7FormData} 
-                      liveOutputs={dynamicStage7}
-                      step4Data={dynamicStage6?.step4Data}
-                      onFieldUpdate={() => {}}
-                    />
-                  </div>
-                </Col>
+                {SHOW_LIVE_CALCULATIONS && (
+                  <Col lg={6}>
+                    <div className="outputs-column">
+                      <Stage7DynamicOutputsPanel 
+                        formData={stage7FormData} 
+                        liveOutputs={dynamicStage7}
+                        step4Data={dynamicStage6?.step4Data}
+                        onFieldUpdate={() => {}}
+                      />
+                    </div>
+                  </Col>
+                )}
               </Row>
             </div>
             
@@ -7669,6 +7988,53 @@ const CreateDesignSystem = () => {
                           stage7Data = await getStage7Results(currentProjectId);
                         }
 
+                        // Call Step 4 POST API for Tank Design
+                        let stage4Data = null;
+                        try {
+                          console.log('📊 Calling Step 4 POST API...');
+                          const step4Payload = {
+                            noTanks_Stage1: stage7FormData.num_tanks_stage1 || 0,
+                            noTanks_Stage2: stage7FormData.num_tanks_stage2 || 0,
+                            noTanks_Stage3: stage7FormData.num_tanks_stage3 || 0,
+                            tankDiaDepthRatioStage1: stage7FormData.tank_dd_ratio_stage1 || 0,
+                            tankDiaDepthRatioStage2: stage7FormData.tank_dd_ratio_stage2 || 0,
+                            tankDiaDepthRatioStage3: stage7FormData.tank_dd_ratio_stage3 || 0,
+                            tankFreeboardStage1: stage7FormData.tank_freeboard_stage1 || 0,
+                            tankFreeboardStage2: stage7FormData.tank_freeboard_stage2 || 0,
+                            tankFreeboardStage3: stage7FormData.tank_freeboard_stage3 || 0
+                          };
+                          console.log('Step 4 Payload:', step4Payload);
+                          const postResult = await postStep4Parameters(currentProjectId, step4Payload);
+                          if (postResult.status === 'success') {
+                            console.log('✅ Step 4 POST Success');
+                            // Call GET API to retrieve Step 4 results
+                            console.log('📊 Calling Step 4 GET API...');
+                            const getResult = await getStep4Results(currentProjectId);
+                            if (getResult.status === 'success') {
+                              stage4Data = getResult.data;
+                              console.log('✅ Step 4 GET Success:', stage4Data);
+                            } else {
+                              throw new Error(getResult.message || 'Step 4 GET API call failed');
+                            }
+                          } else {
+                            throw new Error(postResult.message || 'Step 4 API call failed');
+                          }
+                        } catch (stage4Err) {
+                          console.warn('Step 4 API error:', stage4Err);
+                          // Try to get existing Step 4 results as fallback
+                          stage4Data = await getStep4Results(currentProjectId);
+                        }
+
+                        // Call Step 3 GET API (Production output)
+                        let stage3Data = null;
+                        try {
+                          console.log('📊 Calling Step 3 GET API...');
+                          stage3Data = await getStep3Results(currentProjectId);
+                          console.log('✅ Step 3 GET Success:', stage3Data);
+                        } catch (stage3Err) {
+                          console.warn('Step 3 GET error:', stage3Err);
+                        }
+
                         // Check if Stage 8 is selected
                         let stage8Data = null;
                         if (stage8Selected) {
@@ -7691,11 +8057,15 @@ const CreateDesignSystem = () => {
                         setAdvancedReport({
                           step6Results: step6Data,
                           massBalanceData: massBalanceData,
+                          stage3Results: stage3Data,
+                          stage4Results: stage4Data,
                           stage7Results: stage7Data,
                           stage8Results: stage8Data
                         });
                         setLimitingFactor(limitingFactor);
                         setStage7Report(stage7Data);
+                        setStage3Report(stage3Data);
+                        setStage4Report(stage4Data);
                         if (stage8Data) {
                           setStage8Report(stage8Data);
                         }

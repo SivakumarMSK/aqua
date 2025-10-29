@@ -217,7 +217,9 @@ const Reports = () => {
     } catch (e) {
       console.warn('Stage 6 results not available for basic report:', e);
     }
-    const inputs = {
+
+    // Fetch real inputs using water quality GET API
+    let inputs = {
       waterTemp: 25,
       salinity: 0,
       siteElevation: 0,
@@ -238,6 +240,51 @@ const Reports = () => {
       tanRemoval: 60,
       targetSpecies: report.species || 'Tilapia'
     };
+
+    try {
+      const inputsResponse = await fetch(`/backend/new_design/api/projects/${report.id}/water-quality-parameters`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Accept': 'application/json'
+        }
+      });
+
+      if (inputsResponse.ok) {
+        const inputsData = await inputsResponse.json();
+        const p = inputsData.parameters || {};
+        inputs = {
+          waterTemp: p.temperature ?? 25,
+          salinity: p.salinity ?? 0,
+          siteElevation: p.elevation_m ?? 0,
+          minDO: p.dissolved_O2_min ?? 6,
+          ph: p.pH ?? 7,
+          maxCO2: p.dissolved_CO2_max ?? 10,
+          maxTAN: p.TAN_max ?? 1,
+          minTSS: p.TSS_max ?? 20,
+          tankVolume: p.tanks_volume_each ?? 100,
+          numTanks: p.number_of_tanks ?? 1,
+          targetFishWeight: p.target_market_fish_size ?? 500,
+          targetNumFish: p.target_max_stocking_density ?? 1000,
+          feedRate: p.target_feed_rate ?? 2,
+          feedProtein: p.feed_protein_percent ?? 40,
+          feedConversionRatio: p.feed_conversion_ratio ?? 0,
+          o2Absorption: p.oxygen_injection_efficiency ?? 80,
+          co2Removal: p.co2_removal_efficiency ?? 70,
+          tssRemoval: p.tss_removal_efficiency ?? 80,
+          tanRemoval: p.tan_removal_efficiency ?? 60,
+          targetSpecies: p.species || report.species || 'Tilapia',
+          supplementPureO2: Boolean(p.supplement_pure_o2),
+          alkalinity: p.alkalinity ?? 0,
+          targetMinO2Saturation: p.target_min_o2_saturation ?? 0,
+          productionTarget_t: p.production_target_t ?? 0,
+          harvestFrequency: p.harvest_frequency ?? '',
+          initialWeight: p.initial_weight_wi_g ?? 0
+        };
+      }
+    } catch (error) {
+      console.warn('Failed to fetch water quality parameters:', error);
+    }
     
     // Navigate to ProjectReport with basic data
     navigate('/project-reports/' + report.id, {
@@ -255,7 +302,7 @@ const Reports = () => {
     const token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
     
     // Call all advanced APIs simultaneously
-    const [step6Response, limitingFactorResponse, stage7Response, stage8Response] = await Promise.all([
+    const [step6Response, limitingFactorResponse, stage3Response, stage4Response, stage7Response, stage8Response] = await Promise.all([
       fetch(`/backend/advanced/formulas/api/projects/${report.id}/step_6_results`, {
         method: 'GET',
         headers: {
@@ -264,6 +311,20 @@ const Reports = () => {
         }
       }),
       fetch(`/backend/advanced/formulas/api/projects/${report.id}/limiting_factor`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Accept': 'application/json'
+        }
+      }),
+      fetch(`/backend/advanced/formulas/api/projects/${report.id}/step3`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Accept': 'application/json'
+        }
+      }),
+      fetch(`/backend/advanced/formulas/api/projects/${report.id}/step4`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -297,6 +358,16 @@ const Reports = () => {
     const step6Data = await step6Response.json();
     const limitingFactorData = await limitingFactorResponse.json();
     
+    // Handle Stage 3 and Stage 4 (optional - may not exist for all projects)
+    let stage3Data = null;
+    let stage4Data = null;
+    if (stage3Response.ok) {
+      stage3Data = await stage3Response.json();
+    }
+    if (stage4Response.ok) {
+      stage4Data = await stage4Response.json();
+    }
+    
     // Handle Stage 7 and Stage 8 (optional - may not exist for all projects)
     // IMPORTANT: Stage 8 should only be available if Stage 7 exists
     let stage7Data = null;
@@ -312,12 +383,60 @@ const Reports = () => {
       stage8Data = null;
     }
     
+    // Fetch mass balance data using production-calculations API
+    let massBalanceDataVar = null;
+    try {
+      const mbRes = await fetch(`/backend/formulas/api/projects/${report.id}/production-calculations`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Accept': 'application/json'
+        }
+      });
+      if (mbRes.ok) {
+        const raw = await mbRes.json();
+        // Normalize to UI shape
+        massBalanceDataVar = {
+          oxygen: {
+            saturationAdjustedMgL: raw.o2_saturation_adjusted_mg_l ?? raw.o2_saturation_adjusted?.value ?? null,
+            MINDO_use: raw.min_do_use_mg_l ?? raw.min_do_mg_l ?? null,
+            effluentMgL: raw.oxygen_effluent_concentration_mg_l ?? raw.oxygen_effluent_concentration?.value ?? null,
+            consMgPerDay: raw.oxygen_consumption_production_mg_per_day ?? raw.oxygen_consumption_production?.value ?? null,
+            consKgPerDay: (raw.oxygen_consumption_production_mg_per_day ?? raw.oxygen_consumption_production?.value ?? 0) / 1_000_000
+          },
+          tss: {
+            effluentMgL: raw.tss_effluent_concentration_mg_l ?? raw.tss_effluent_concentration?.value ?? null,
+            prodMgPerDay: raw.tss_production_mg ?? raw.tss_production?.value ?? null,
+            prodKgPerDay: (raw.tss_production_mg ?? raw.tss_production?.value ?? 0) / 1_000_000,
+            MAXTSS_use: raw.max_tss_use_mg_l ?? null
+          },
+          co2: {
+            effluentMgL: raw.co2_effluent_concentration_mg_l ?? raw.co2_effluent_concentration?.value ?? null,
+            prodMgPerDay: raw.co2_production_mg_per_day ?? raw.co2_production?.value ?? null,
+            prodKgPerDay: (raw.co2_production_mg_per_day ?? raw.co2_production?.value ?? 0) / 1_000_000,
+            MAXCO2_use: raw.max_co2_use_mg_l ?? null
+          },
+          tan: {
+            effluentMgL: raw.tan_effluent_concentration_mg_l ?? raw.tan_effluent_concentration?.value ?? null,
+            prodMgPerDay: raw.tan_production_mg_per_day ?? raw.tan_production?.value ?? null,
+            prodKgPerDay: (raw.tan_production_mg_per_day ?? raw.tan_production?.value ?? 0) / 1_000_000,
+            MAXTAN_use: raw.max_tan_use_mg_l ?? null
+          }
+        };
+      }
+    } catch (e) {
+      console.warn('Mass balance fetch error (Reports):', e);
+    }
+
     // Map API response to our expected format
     const outputs = {
       step6Results: step6Data,
       limitingFactor: limitingFactorData,
+      stage3Results: stage3Data,
+      stage4Results: stage4Data,
       stage7Results: stage7Data,
       stage8Results: stage8Data,
+      massBalanceData: massBalanceDataVar
     };
 
     // Fetch real inputs using water quality GET API
@@ -363,7 +482,17 @@ const Reports = () => {
           targetMinO2Saturation: p.target_min_o2_saturation ?? 0,
           productionTarget_t: p.production_target_t ?? 0,
           harvestFrequency: p.harvest_frequency ?? '',
-          initialWeight: p.initial_weight_wi_g ?? 0
+          initialWeight: p.initial_weight_wi_g ?? 0,
+          // Stage 4 tank design fields (also part of Stage 7 parameters)
+          numTanksStage1: p.num_tanks_stage1 ?? 0,
+          numTanksStage2: p.num_tanks_stage2 ?? 0,
+          numTanksStage3: p.num_tanks_stage3 ?? 0,
+          tankDdRatioStage1: p.tank_dd_ratio_stage1 ?? 0,
+          tankDdRatioStage2: p.tank_dd_ratio_stage2 ?? 0,
+          tankDdRatioStage3: p.tank_dd_ratio_stage3 ?? 0,
+          tankFreeboardStage1: p.tank_freeboard_stage1 ?? 0,
+          tankFreeboardStage2: p.tank_freeboard_stage2 ?? 0,
+          tankFreeboardStage3: p.tank_freeboard_stage3 ?? 0
         };
       }
     } catch (error) {

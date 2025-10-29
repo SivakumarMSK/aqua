@@ -128,6 +128,24 @@ const AllProjects = () => {
     }
   }, [projectType]);
 
+  // Handle basic project update - navigate to design system with pre-filled data
+  const handleBasicProjectUpdate = (project) => {
+    localStorage.setItem('updateProjectId', project.id);
+    localStorage.setItem('updateProjectType', 'basic');
+    localStorage.setItem('updateProjectName', project.name);
+    localStorage.setItem('updateProjectSpecies', project.species_names || '');
+    navigate('/design-systems/new?update=true&type=basic');
+  };
+
+  // Handle advanced project update - navigate to design system with pre-filled data
+  const handleAdvancedProjectUpdate = (project) => {
+    localStorage.setItem('updateProjectId', project.id);
+    localStorage.setItem('updateProjectType', 'advanced');
+    localStorage.setItem('updateProjectName', project.name);
+    localStorage.setItem('updateProjectSpecies', project.species_names || '');
+    navigate('/design-systems/new?update=true&type=advanced');
+  };
+
   const handleProjectClick = async (project) => {
     // Determine project type
     const projectType = classifyProject(project);
@@ -221,8 +239,8 @@ const AllProjects = () => {
         console.warn('Stage 6 results not available for basic project:', e);
       }
 
-      // Create dummy inputs for the report
-      const inputs = {
+      // Fetch real inputs using water quality GET API
+      let inputs = {
         waterTemp: 25,
         salinity: 0,
         siteElevation: 0,
@@ -241,8 +259,53 @@ const AllProjects = () => {
         co2Removal: 70,
         tssRemoval: 80,
         tanRemoval: 60,
-        targetSpecies: 'Tilapia'
+        targetSpecies: project.species_names || 'Tilapia'
       };
+
+      try {
+        const inputsResponse = await fetch(`/backend/new_design/api/projects/${project.id}/water-quality-parameters`, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Accept': 'application/json'
+          }
+        });
+
+        if (inputsResponse.ok) {
+          const inputsData = await inputsResponse.json();
+          const p = inputsData.parameters || {};
+          inputs = {
+            waterTemp: p.temperature ?? 25,
+            salinity: p.salinity ?? 0,
+            siteElevation: p.elevation_m ?? 0,
+            minDO: p.dissolved_O2_min ?? 6,
+            ph: p.pH ?? 7,
+            maxCO2: p.dissolved_CO2_max ?? 10,
+            maxTAN: p.TAN_max ?? 1,
+            minTSS: p.TSS_max ?? 20,
+            tankVolume: p.tanks_volume_each ?? 100,
+            numTanks: p.number_of_tanks ?? 1,
+            targetFishWeight: p.target_market_fish_size ?? 500,
+            targetNumFish: p.target_max_stocking_density ?? 1000,
+            feedRate: p.target_feed_rate ?? 2,
+            feedProtein: p.feed_protein_percent ?? 40,
+            feedConversionRatio: p.feed_conversion_ratio ?? 0,
+            o2Absorption: p.oxygen_injection_efficiency ?? 80,
+            co2Removal: p.co2_removal_efficiency ?? 70,
+            tssRemoval: p.tss_removal_efficiency ?? 80,
+            tanRemoval: p.tan_removal_efficiency ?? 60,
+            targetSpecies: p.species || project.species_names || 'Tilapia',
+            supplementPureO2: Boolean(p.supplement_pure_o2),
+            alkalinity: p.alkalinity ?? 0,
+            targetMinO2Saturation: p.target_min_o2_saturation ?? 0,
+            productionTarget_t: p.production_target_t ?? 0,
+            harvestFrequency: p.harvest_frequency ?? '',
+            initialWeight: p.initial_weight_wi_g ?? 0
+          };
+        }
+      } catch (error) {
+        console.warn('Failed to fetch water quality parameters:', error);
+      }
       
       // Navigate to ProjectReport with the calculated results
       navigate('/project-reports/' + project.id, {
@@ -272,7 +335,7 @@ const AllProjects = () => {
       const token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
       
       // Call all advanced APIs simultaneously
-      const [step6Response, limitingFactorResponse, stage7Response, stage8Response] = await Promise.all([
+      const [step6Response, limitingFactorResponse, stage3Response, stage4Response, stage7Response, stage8Response] = await Promise.all([
         fetch(`/backend/advanced/formulas/api/projects/${project.id}/step_6_results`, {
           method: 'GET',
           headers: {
@@ -281,6 +344,20 @@ const AllProjects = () => {
           }
         }),
         fetch(`/backend/advanced/formulas/api/projects/${project.id}/limiting_factor`, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Accept': 'application/json'
+          }
+        }),
+        fetch(`/backend/advanced/formulas/api/projects/${project.id}/step3`, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Accept': 'application/json'
+          }
+        }),
+        fetch(`/backend/advanced/formulas/api/projects/${project.id}/step4`, {
           method: 'GET',
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -374,6 +451,22 @@ const AllProjects = () => {
         console.warn('Mass balance (AllProjects view) non-blocking error:', e);
       }
 
+      // Handle Stage 3 and Stage 4 (optional - may not exist for all projects)
+      let stage3Data = null;
+      let stage4Data = null;
+      if (stage3Response.ok) {
+        stage3Data = await stage3Response.json();
+        console.log('Advanced stage3 API response:', stage3Data);
+      } else {
+        console.log('Stage 3 data not available for this project');
+      }
+      if (stage4Response.ok) {
+        stage4Data = await stage4Response.json();
+        console.log('Advanced stage4 API response:', stage4Data);
+      } else {
+        console.log('Stage 4 data not available for this project');
+      }
+
       // Handle Stage 7 and Stage 8 (optional - may not exist for all projects)
       // IMPORTANT: Stage 8 should only be available if Stage 7 exists
       let stage7Data = null;
@@ -398,42 +491,112 @@ const AllProjects = () => {
       const advancedReport = {
         step6Results: step6Data,
         massBalanceData: (step6Data && step6Data.massBalanceData) ? step6Data.massBalanceData : null,
+        stage3Results: stage3Data,
+        stage4Results: stage4Data,
         stage7Results: stage7Data,
         stage8Results: stage8Data
       };
 
+      // Fetch real inputs using water quality GET API
+      let inputs = {
+        waterTemp: 25,
+        salinity: 0,
+        siteElevation: 0,
+        minDO: 6,
+        pH: 7,
+        maxCO2: 10,
+        maxTAN: 1,
+        minTSS: 20,
+        tankVolume: 100,
+        numTanks: 1,
+        targetFishWeight: 500,
+        targetNumFish: 1000,
+        feedRate: 2,
+        feedProtein: 40,
+        o2Absorption: 80,
+        co2Removal: 70,
+        tssRemoval: 80,
+        tanRemoval: 60,
+        targetSpecies: project.species_names || 'Tilapia'
+      };
+
+      try {
+        const inputsResponse = await fetch(`/backend/new_design/api/projects/${project.id}/water-quality-parameters`, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Accept': 'application/json'
+          }
+        });
+
+        if (inputsResponse.ok) {
+          const inputsData = await inputsResponse.json();
+          const p = inputsData.parameters || {};
+          inputs = {
+            waterTemp: p.temperature ?? 25,
+            salinity: p.salinity ?? 0,
+            siteElevation: p.elevation_m ?? 0,
+            minDO: p.dissolved_O2_min ?? 6,
+            ph: p.pH ?? 7,
+            maxCO2: p.dissolved_CO2_max ?? 10,
+            maxTAN: p.TAN_max ?? 1,
+            minTSS: p.TSS_max ?? 20,
+            tankVolume: p.tanks_volume_each ?? 100,
+            numTanks: p.number_of_tanks ?? 1,
+            targetFishWeight: p.target_market_fish_size ?? 500,
+            targetNumFish: p.target_max_stocking_density ?? 1000,
+            feedRate: p.target_feed_rate ?? 2,
+            feedProtein: p.feed_protein_percent ?? 40,
+            feedConversionRatio: p.feed_conversion_ratio ?? 0,
+            o2Absorption: p.oxygen_injection_efficiency ?? 80,
+            co2Removal: p.co2_removal_efficiency ?? 70,
+            tssRemoval: p.tss_removal_efficiency ?? 80,
+            tanRemoval: p.tan_removal_efficiency ?? 60,
+            targetSpecies: p.species || project.species_names || 'Tilapia',
+            supplementPureO2: Boolean(p.supplement_pure_o2),
+            alkalinity: p.alkalinity ?? 0,
+            targetMinO2Saturation: p.target_min_o2_saturation ?? 0,
+            productionTarget_t: p.production_target_t ?? 0,
+            harvestFrequency: p.harvest_frequency ?? '',
+            initialWeight: p.initial_weight_wi_g ?? 0,
+            // Stage 7 specific fields
+            mbbrLocation: p.mbbr_location ?? 'Inside tank',
+            mediaToWaterVolumeRatio: p.media_to_water_volume_ratio ?? 0.1,
+            volumetricNitrificationRateVtr: p.volumetric_nitrification_rate_vtr ?? 0.5,
+            standaloneHeightDiameterRatio: p.standalone_height_diameter_ratio ?? 2.0,
+            pumpStopOverflowVolume: p.pump_stop_overflow_volume ?? 0.1,
+            // Stage 4 tank design fields (also part of Stage 7 parameters)
+            numTanksStage1: p.num_tanks_stage1 ?? 0,
+            numTanksStage2: p.num_tanks_stage2 ?? 0,
+            numTanksStage3: p.num_tanks_stage3 ?? 0,
+            tankDdRatioStage1: p.tank_dd_ratio_stage1 ?? 0,
+            tankDdRatioStage2: p.tank_dd_ratio_stage2 ?? 0,
+            tankDdRatioStage3: p.tank_dd_ratio_stage3 ?? 0,
+            tankFreeboardStage1: p.tank_freeboard_stage1 ?? 0,
+            tankFreeboardStage2: p.tank_freeboard_stage2 ?? 0,
+            tankFreeboardStage3: p.tank_freeboard_stage3 ?? 0
+          };
+        }
+      } catch (error) {
+        console.warn('Failed to fetch water quality parameters:', error);
+      }
+
       // Navigate to ProjectReport with the calculated results (same as basic projects)
       navigate('/project-reports/' + project.id, {
         state: {
-          inputs: {
-            waterTemp: 25,
-            salinity: 0,
-            siteElevation: 0,
-            minDO: 6,
-            pH: 7,
-            maxCO2: 10,
-            maxTAN: 1,
-            minTSS: 20,
-            tankVolume: 100,
-            numTanks: 1,
-            targetFishWeight: 500,
-            targetNumFish: 1000,
-            feedRate: 2,
-            feedProtein: 40,
-            o2Absorption: 80,
-            co2Removal: 70,
-            tssRemoval: 80,
-            tanRemoval: 60,
-            targetSpecies: 'Tilapia'
-          },
+          inputs: inputs,
           outputs: {
             step6Results: step6Data,
             limitingFactor: limitingFactorData,
+            stage3Results: stage3Data,
+            stage4Results: stage4Data,
             stage7Results: stage7Data,
             stage8Results: stage8Data,
             massBalanceData: (step6Data && step6Data.massBalanceData) ? step6Data.massBalanceData : null
           },
-          projectType: 'advanced'
+          projectType: 'advanced',
+          advancedInputs: inputs,
+          stage7Inputs: inputs
         }
       });
     } catch (err) {
@@ -548,6 +711,14 @@ const AllProjects = () => {
                         onClick={() => handleProjectClick(project)}
                       >
                         <i className="bi bi-eye"></i>
+                      </span>
+                      <span 
+                        className="update-btn" 
+                        title={`Update ${projectType} project`} 
+                        aria-label={`Update ${projectType} project`} 
+                        onClick={() => projectType === 'basic' ? handleBasicProjectUpdate(project) : handleAdvancedProjectUpdate(project)}
+                      >
+                        <i className="bi bi-pencil-square"></i>
                       </span>
                     </div>
                   </Card.Body>

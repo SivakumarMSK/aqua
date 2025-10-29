@@ -452,7 +452,8 @@ export const createDesignSystem = async (designData) => {
       projectName: designData.projectName.trim(),
       systemPurpose: (designData.systemPurpose || 'Commercial aquaculture production (monoculture)').trim(),
       systemType: (designData.systemType || 'RAS').trim(),
-      targetSpecies: (designData.targetSpecies || '').trim(),
+      species: (designData.targetSpecies || '').trim(), // Use 'species' instead of 'targetSpecies' to match API
+      targetSpecies: (designData.targetSpecies || '').trim(), // Keep for backward compatibility
       useRecommendedValues: Boolean(designData.useRecommendedValues),
       projects: [{
         id: isUpdate ? existingProjectId : designId,
