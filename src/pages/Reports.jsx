@@ -8,7 +8,7 @@ import Dropdown from 'react-bootstrap/Dropdown';
 import { getAllDesignSystems } from '../services/designSystemService.jsx';
 import { deleteProject } from '../services/projectService.jsx';
 import { useNavigate } from 'react-router-dom';
-import { generateMassBalanceCardsPdf, generateAdvancedReportPdf, generateStage7ReportPdf, generateCompleteAdvancedReportPdf } from '../utils/pdfGenerator';
+import { generateMassBalanceCardsPdf, generateAdvancedReportPdf, generateStage7ReportPdf, generateCompleteAdvancedReportPdf, generateBasicCompleteReportPdf } from '../utils/pdfGenerator';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import Toast from '../components/Toast';
@@ -639,8 +639,8 @@ const Reports = () => {
       targetSpecies: report.species || 'Tilapia'
     };
     
-    // Generate basic report PDF
-    const doc = generateMassBalanceCardsPdf(inputs, outputs);
+    // Generate basic report PDF with complete data
+    const doc = generateBasicCompleteReportPdf(inputs, outputs, null, null);
     const name = (report.projectName || report.name || 'basic-report').toLowerCase().replace(/[^a-z0-9]+/g, '-');
     doc.save(`${name}-${report.id}.pdf`);
   };

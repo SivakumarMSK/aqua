@@ -355,7 +355,7 @@ const postStep7LiveCalculations = async (projectId, payload) => {
     throw error;
   }
 };
-import { generateMassBalanceReport, generateAdvancedReportPdf, generateStage7ReportPdf, generateStage8ReportPdf, generateCompleteAdvancedReportPdf } from '../utils/pdfGenerator';
+import { generateMassBalanceReport, generateAdvancedReportPdf, generateStage7ReportPdf, generateStage8ReportPdf, generateCompleteAdvancedReportPdf, generateBasicCompleteReportPdf } from '../utils/pdfGenerator';
 import { getCurrentPlan, getCurrentPlanSync } from '../utils/subscriptionUtils';
 import Navbar from './Navbar';
 import Button from 'react-bootstrap/Button';
@@ -760,8 +760,9 @@ const CreateDesignSystem = () => {
       if (updateType === 'advanced') {
         setCalculationType('advanced');
         setShowCalculationTypeSelection(false);
-        setShowAdvancedLayout(true);
-        setShowAdvancedFields(true); // Show advanced fields for update flow
+        // Start from system details step just like basic flow
+        setShowAdvancedLayout(false);
+        setShowAdvancedFields(false);
       } else {
         // Default to basic for update flow
         setCalculationType('basic');
@@ -775,6 +776,13 @@ const CreateDesignSystem = () => {
       const updateProjectSpecies = localStorage.getItem('updateProjectSpecies');
       
       if (updateProjectId) {
+        // Ensure downstream calls reference the correct project (avoid stale basic project)
+        try {
+          localStorage.setItem('currentProjectId', updateProjectId);
+        } catch (e) {
+          console.warn('Unable to set currentProjectId in localStorage:', e);
+        }
+
         // Set initial form data from localStorage
         setFormData(prev => ({
           ...prev,
@@ -3002,8 +3010,17 @@ const CreateDesignSystem = () => {
     // Log final form data before moving to next step
     console.log('Moving to next step with form data:', formData);
     
-    // For basic calculations, go to combined inputs page after step 1
+    // Route advanced update flow to advanced layout after details
     console.log('Step:', step, 'Calculation Type:', calculationType);
+    if (step === 1 && calculationType === 'advanced' && isUpdateFlow) {
+      console.log('Advanced update flow: switching to advanced layout after details');
+      setShowCalculationTypeSelection(false);
+      setShowAdvancedLayout(true);
+      setShowAdvancedFields(true);
+      return;
+    }
+
+    // For basic calculations, go to combined inputs page after step 1
     if (step === 1 && calculationType === 'basic') {
       console.log('Going to combined inputs page');
       setShowCombinedInputs(true);
@@ -3527,10 +3544,10 @@ const CreateDesignSystem = () => {
             </div>
           </div>
 
-          {/* Stage 6: Juvenile (Stage 1) */}
+          {/* Controlling Flow Rate: Juvenile */}
           {formData.basicStep6Results && formData.basicStep6Results.step_6 && (
             <div className="col-12 mt-2">
-              <h5 className="mb-3">Stage 6: Juvenile (Stage 1)</h5>
+              <h5 className="mb-3">Controlling Flow Rate: Juvenile</h5>
               {(() => {
                 const s1 = formData.basicStep6Results.step_6 || {};
                 return (
@@ -3585,10 +3602,10 @@ const CreateDesignSystem = () => {
             </div>
           )}
 
-          {/* Limiting Factor (Stage 1) */}
+          {/* Limiting Factor (Juvenile) */}
           {formData.basicLimitingFactor && formData.basicLimitingFactor.stage1 && (
             <div className="col-12 mt-2">
-              <h5 className="mb-3">Limiting Factor (Stage 1)</h5>
+              <h5 className="mb-3">Limiting Factor (Juvenile)</h5>
               {(() => {
                 const lf = formData.basicLimitingFactor.stage1 || {};
                 const cardClass = (factor) => {
@@ -3639,8 +3656,13 @@ const CreateDesignSystem = () => {
                 className="me-2"
                 onClick={() => {
                   try {
-                    const doc = generateMassBalanceReport(formData, results);
-                    const fileName = `Mass_Balance_Report_${formData.designSystemName || 'Design'}_${new Date().toISOString().split('T')[0]}.pdf`;
+                    const doc = generateBasicCompleteReportPdf(
+                      formData,
+                      results,
+                      formData.basicStep6Results,
+                      formData.basicLimitingFactor
+                    );
+                    const fileName = `Basic_Complete_Report_${formData.designSystemName || 'Design'}_${new Date().toISOString().split('T')[0]}.pdf`;
                     doc.save(fileName);
                   } catch (error) {
                     console.error('Error generating PDF:', error);
@@ -5109,7 +5131,7 @@ const CreateDesignSystem = () => {
               </div>
               {formData.basicStep6Results && formData.basicStep6Results.step_6 && (
                 <div className="mt-3">
-                  <h5 className="mb-3">Stage 6: Juvenile (Stage 1)</h5>
+                  <h5 className="mb-3">Controlling Flow Rate: Juvenile</h5>
                   {(() => {
                     const s1 = formData.basicStep6Results.step_6 || {};
                     return (
@@ -5165,7 +5187,7 @@ const CreateDesignSystem = () => {
               )}
               {formData.basicLimitingFactor && (
                 <div className="mt-3">
-                  <h6 className="text-primary mb-2">Limiting Factor (Stage 1)</h6>
+                  <h6 className="text-primary mb-2">Limiting Factor (Juvenile)</h6>
                   {(() => {
                     const lf = formData.basicLimitingFactor || {};
                     return (
@@ -5233,8 +5255,13 @@ const CreateDesignSystem = () => {
                   textAlign: 'center'
                 }}
                 onClick={() => {
-                  const doc = generateMassBalanceReport(formData, results);
-                  doc.save(`mass-balance-report-${new Date().getTime()}.pdf`);
+                  const doc = generateBasicCompleteReportPdf(
+                    formData,
+                    results,
+                    formData.basicStep6Results,
+                    formData.basicLimitingFactor
+                  );
+                  doc.save(`basic-complete-report-${new Date().getTime()}.pdf`);
                 }}
               >
                 Download
@@ -5742,62 +5769,6 @@ const CreateDesignSystem = () => {
                     </div>
                   </div>
                 </div>
-
-
-                {/* Stage 8 Input Fields - Basic Pump Size */}
-                {stage8Selected && (
-                  <div className="config-section mb-5">
-                    <div className="section-header">
-                      <h4><i className="bi bi-gear text-primary me-2"></i>Stage 8: Basic Pump Size Parameters</h4>
-                      <p className="text-muted">Configure parameters for basic pump sizing calculations</p>
-                    </div>
-                    
-                    <div className="row g-3">
-                      <div className="col-md-6 col-lg-4">
-                        <Form.Group>
-                          <Form.Label>Pump Flow Rate (L/min)</Form.Label>
-                          <Form.Control
-                            type="number"
-                            placeholder="Enter pump flow rate"
-                            disabled
-                            className="placeholder-input"
-                          />
-                          <Form.Text className="text-muted">
-                            Placeholder - Parameters not ready
-                          </Form.Text>
-                        </Form.Group>
-                      </div>
-                      <div className="col-md-6 col-lg-4">
-                        <Form.Group>
-                          <Form.Label>Pump Head (m)</Form.Label>
-                          <Form.Control
-                            type="number"
-                            placeholder="Enter pump head"
-                            disabled
-                            className="placeholder-input"
-                          />
-                          <Form.Text className="text-muted">
-                            Placeholder - Parameters not ready
-                          </Form.Text>
-                        </Form.Group>
-                      </div>
-                      <div className="col-md-6 col-lg-4">
-                        <Form.Group>
-                          <Form.Label>Pump Type</Form.Label>
-                          <Form.Control
-                            type="text"
-                            placeholder="Enter pump type"
-                            disabled
-                            className="placeholder-input"
-                          />
-                          <Form.Text className="text-muted">
-                            Placeholder - Parameters not ready
-                          </Form.Text>
-                        </Form.Group>
-                      </div>
-                    </div>
-                  </div>
-                )}
 
             {/* Single Calculate Button */}
             <div className="calculate-section">
@@ -7738,14 +7709,6 @@ const CreateDesignSystem = () => {
               </div>
             </div>
 
-            {/* Stage 8 Selection */}
-            <div className="config-section mb-4">
-              <div className="section-header">
-                <h4><i className="bi bi-gear text-primary me-2"></i>Additional Calculations</h4>
-                <p className="text-muted">Select additional calculation stages</p>
-              </div>
-              
-            </div>
                   </div>
                 </Col>
                 
@@ -7764,22 +7727,29 @@ const CreateDesignSystem = () => {
                 )}
               </Row>
             </div>
-            
-            {/* Stage 8 Checkbox - moved outside two-column layout */}
-            <div className="row mt-4">
-              <div className="col-12">
-                <div className="stage-option-card">
-                  <Form.Check
-                    type="checkbox"
-                    id="stage8-checkbox"
-                    label="Calculate Basic Pump Size (Stage 8)"
-                    checked={stage8Selected}
-                    onChange={(e) => setStage8Selected(e.target.checked)}
-                    className="stage-checkbox"
-                  />
-                  <p className="text-muted small mt-2">
-                    Calculate basic pump sizing parameters including flow rate, head pressure, and power requirements.
-                  </p>
+
+            {/* Stage 8 Selection */}
+            <div className="config-section mb-4">
+              <div className="section-header">
+                <h4><i className="bi bi-gear text-primary me-2"></i>Additional Calculations</h4>
+                <p className="text-muted">Select additional calculation stages</p>
+              </div>
+              
+              <div className="row g-3">
+                <div className="col-md-6">
+                  <div className="stage-option-card">
+                    <Form.Check
+                      type="checkbox"
+                      id="stage8-checkbox"
+                      label="Calculate Basic Pump Size (Stage 8)"
+                      checked={stage8Selected}
+                      onChange={(e) => setStage8Selected(e.target.checked)}
+                      className="stage-checkbox"
+                    />
+                    <p className="text-muted small mt-2">
+                      Calculate basic pump sizing parameters including flow rate, head pressure, and power requirements.
+                    </p>
+                  </div>
                 </div>
               </div>
             </div>
@@ -8097,10 +8067,12 @@ const CreateDesignSystem = () => {
             )}
             {!showCalculationTypeSelection && !showAdvancedLayout && (
               <>
-                <Stepper 
-                  currentStep={step} 
-                  type={calculationType === 'basic' ? 'basic' : 'advanced'} 
-                />
+                {!(calculationType === 'advanced' && isUpdateFlow && step === 1) && (
+                  <Stepper 
+                    currentStep={step} 
+                    type={calculationType === 'basic' ? 'basic' : 'advanced'} 
+                  />
+                )}
                 {(calculationType === 'basic' && step === 2) ? (
                   <CombinedInputsPage
                     formData={formData}

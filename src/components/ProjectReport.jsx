@@ -3,7 +3,7 @@ import Navbar from './Navbar';
 import Card from 'react-bootstrap/Card';
 import Button from 'react-bootstrap/Button';
 import { useParams, useLocation, useNavigate } from 'react-router-dom';
-import { generateMassBalanceCardsPdf } from '../utils/pdfGenerator';
+import { generateMassBalanceCardsPdf, generateBasicCompleteReportPdf } from '../utils/pdfGenerator';
 import { deleteProject } from '../services/projectService';
 import Toast from './Toast';
 import Swal from 'sweetalert2';
@@ -109,6 +109,32 @@ const ProjectReport = () => {
             {projectType === 'advanced' ? 'Advanced Project Report' : 'Mass Balance Report'}
           </h3>
           <div className="d-flex gap-2">
+            {projectType !== 'advanced' && (
+              <Button
+                variant="outline-primary"
+                size="sm"
+                onClick={() => {
+                  try {
+                    const doc = generateBasicCompleteReportPdf(
+                      inputs,
+                      outputs,
+                      outputs.step6Results,
+                      outputs.limitingFactor
+                    );
+                    const fileName = `Basic_Complete_Report_${id}_${new Date().toISOString().split('T')[0]}.pdf`;
+                    doc.save(fileName);
+                  } catch (error) {
+                    console.error('Error generating PDF:', error);
+                    setToast({ show: true, message: 'Error generating PDF. Please try again.', type: 'error' });
+                  }
+                }}
+                title="Download PDF"
+                aria-label="Download PDF"
+              >
+                <i className="bi bi-download me-1"></i>
+                Download
+              </Button>
+            )}
             <Button
               variant="outline-danger"
               size="sm"
