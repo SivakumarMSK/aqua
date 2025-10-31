@@ -445,7 +445,17 @@ const Dashboard = () => {
             targetMinO2Saturation: p.target_min_o2_saturation ?? 0,
             productionTarget_t: p.production_target_t ?? 0,
             harvestFrequency: p.harvest_frequency ?? '',
-            initialWeight: p.initial_weight_wi_g ?? 0
+            initialWeight: p.initial_weight_wi_g ?? 0,
+            // Stage-wise parameters
+            FCR_Stage1: p.fcr_stage1 ?? 0,
+            FCR_Stage2: p.fcr_stage2 ?? 0,
+            FCR_Stage3: p.fcr_stage3 ?? 0,
+            FeedProtein_Stage1: p.feed_protein_stage1 ?? 0,
+            FeedProtein_Stage2: p.feed_protein_stage2 ?? 0,
+            FeedProtein_Stage3: p.feed_protein_stage3 ?? 0,
+            Estimated_mortality_Stage1: p.estimated_mortality_stage1 ?? 0,
+            Estimated_mortality_Stage2: p.estimated_mortality_stage2 ?? 0,
+            Estimated_mortality_Stage3: p.estimated_mortality_stage3 ?? 0
           };
         }
       } catch (error) {

@@ -3,7 +3,7 @@ import Card from 'react-bootstrap/Card';
 import Row from 'react-bootstrap/Row';
 import Col from 'react-bootstrap/Col';
 
-const InputsDisplay = ({ inputs, showOnlyStage7Specific = false, showOnlyStage4Specific = false }) => {
+const InputsDisplay = ({ inputs, showOnlyStage7Specific = false, showOnlyStage4Specific = false, forceShowStageWise = false }) => {
   if (!inputs) {
     return null;
   }
@@ -139,7 +139,7 @@ const InputsDisplay = ({ inputs, showOnlyStage7Specific = false, showOnlyStage4S
         </Col>
 
         {/* Stage-wise Parameters */}
-        {(inputs.FCR_Stage1 !== undefined || inputs.FCR_Stage2 !== undefined || inputs.FCR_Stage3 !== undefined) && (
+        {(forceShowStageWise || inputs.FCR_Stage1 !== undefined || inputs.FCR_Stage2 !== undefined || inputs.FCR_Stage3 !== undefined) && (
           <Col md={12}>
             <Card className="h-100">
               <Card.Header>

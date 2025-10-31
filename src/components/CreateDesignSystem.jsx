@@ -515,7 +515,7 @@ const CreateDesignSystem = () => {
 
   // Fetch and set advancedInputs when entering report view or switching to relevant tabs
   useEffect(() => {
-    const shouldShowInputs = activeReportTab === 'massBalance' || activeReportTab === 'stage7' || activeReportTab === 'stage4' || activeReportTab === 'stage3';
+    const shouldShowInputs = activeReportTab === 'all' || activeReportTab === 'massBalance' || activeReportTab === 'stage7' || activeReportTab === 'stage4' || activeReportTab === 'stage3';
     if (!shouldShowInputs) return;
 
     const currentProjectId = localStorage.getItem('currentProjectId');
@@ -528,8 +528,9 @@ const CreateDesignSystem = () => {
       try {
         const res = await getWaterQualityParameters(currentProjectId);
         if (res?.status === 'success' && res.data) {
-          if (activeReportTab === 'massBalance' && !advancedInputs) {
-            const mapped = mapWaterQualityToInputs(res.data);
+          if ((activeReportTab === 'all' || activeReportTab === 'massBalance') && !advancedInputs) {
+            // Use Stage7 mapper here to include stage-wise fields (FCR, Feed Protein, Mortality)
+            const mapped = mapWaterQualityToStage7Inputs(res.data);
             setAdvancedInputs(mapped);
           } else if (activeReportTab === 'stage7') {
             const mapped = mapWaterQualityToStage7Inputs(res.data);
@@ -6283,7 +6284,10 @@ const CreateDesignSystem = () => {
                 {advancedInputs && (
                   <div className="mb-4">
                     <h5 className="mb-3 text-info">Mass Balance & Controlling Flow Rate Input Parameters</h5>
-                    <InputsDisplay inputs={advancedInputs} />
+                    <InputsDisplay 
+                      inputs={advancedInputs}
+                      forceShowStageWise={true}
+                    />
                   </div>
                 )}
                 <div className="row g-4">
@@ -6771,40 +6775,58 @@ const CreateDesignSystem = () => {
 
               {/* Helper function to render a stage's production data */}
               {(() => {
-                const renderProductionData = (stageData, stageName) => {
+                const renderProductionData = (stageData, stageName, priorityKeys = [], labelMap = {}) => {
                   if (!stageData || typeof stageData !== 'object') return null;
-                  
+
+                  const isRenderable = (val) => !(val === null || val === undefined || (typeof val === 'object' && !Array.isArray(val)));
+
+                  const renderRow = (key, value) => {
+                    const fallbackKey = key
+                      .replace(/_/g, ' ')
+                      .replace(/\b\w/g, l => l.toUpperCase());
+                    const formattedKey = labelMap[key] || fallbackKey;
+
+                    let formattedValue = value;
+                    if (typeof value === 'number') {
+                      formattedValue = value.toFixed(2);
+                    } else if (Array.isArray(value)) {
+                      formattedValue = value.join(', ');
+                    }
+
+                    return (
+                      <div key={key} className="col-md-6">
+                        <div className="metric-row">
+                          <span className="label">{formattedKey}</span>
+                          <strong>{formattedValue}</strong>
+                        </div>
+                      </div>
+                    );
+                  };
+
+                  // Stage 1 may have a preferred order; render those first
+                  const orderedRows = [];
+                  const renderedSet = new Set();
+
+                  priorityKeys.forEach((k) => {
+                    if (Object.prototype.hasOwnProperty.call(stageData, k)) {
+                      const v = stageData[k];
+                      if (isRenderable(v)) {
+                        orderedRows.push(renderRow(k, v));
+                        renderedSet.add(k);
+                      }
+                    }
+                  });
+
+                  // Render remaining keys in default order
+                  Object.entries(stageData).forEach(([key, value]) => {
+                    if (renderedSet.has(key)) return;
+                    if (!isRenderable(value)) return;
+                    orderedRows.push(renderRow(key, value));
+                  });
+
                   return (
                     <div className="row g-3 mb-3">
-                      {Object.entries(stageData).map(([key, value]) => {
-                        // Skip null, undefined values
-                        if (value === null || value === undefined) return null;
-                        
-                        // Skip nested objects (we'll render them separately if needed)
-                        if (typeof value === 'object' && !Array.isArray(value)) return null;
-                        
-                        // Format the key for display
-                        const formattedKey = key
-                          .replace(/_/g, ' ')
-                          .replace(/\b\w/g, l => l.toUpperCase());
-                        
-                        // Format the value
-                        let formattedValue = value;
-                        if (typeof value === 'number') {
-                          formattedValue = value.toFixed(2);
-                        } else if (Array.isArray(value)) {
-                          formattedValue = value.join(', ');
-                        }
-                        
-                        return (
-                          <div key={key} className="col-md-6">
-                            <div className="metric-row">
-                              <span className="label">{formattedKey}</span>
-                              <strong>{formattedValue}</strong>
-                            </div>
-                          </div>
-                        );
-                      })}
+                      {orderedRows}
                     </div>
                   );
                 };
@@ -6818,7 +6840,38 @@ const CreateDesignSystem = () => {
                             <h5 className="mb-0">Juvenile (Stage 1) Production</h5>
                           </Card.Header>
                           <Card.Body>
-                            {renderProductionData(stage3Report.stage1, 'Stage 1')}
+                            {renderProductionData(
+                              stage3Report.stage1,
+                              'Stage 1',
+                              [
+                                'Wi_use',
+                                'initialBiomassStage1',
+                                'W_end_P1',
+                                'fishEndStage1',
+                                'BiomassStage1_kg',
+                                'cultureDuration_P1',
+                                'BiomassGain_Stage1_kg.day',
+                                'FCR_Stage1',
+                                'FeedRateStage1_kg',
+                                'FeedRateStage1_percent',
+                                'MaxDensityStage1_kgm3',
+                                'RecDensityStage1_kgm3',
+                              ],
+                              {
+                                'Wi_use': 'Initial weight',
+                                'initialBiomassStage1': 'Initial biomass',
+                                'W_end_P1': 'Final weight',
+                                'fishEndStage1': 'Number of fish at end of stage',
+                                'BiomassStage1_kg': 'Final tank biomass',
+                                'cultureDuration_P1': 'Time in stage 1',
+                                'BiomassGain_Stage1_kg.day': 'Biomass gain per day',
+                                'FCR_Stage1': 'FCR',
+                                'FeedRateStage1_kg': 'FeedRateStage1_kg',
+                                'FeedRateStage1_percent': 'FeedRateStage1_percent',
+                                'MaxDensityStage1_kgm3': 'Max stocking density',
+                                'RecDensityStage1_kgm3': 'Recommended stocking density (50% of max, to start with)'
+                              }
+                            )}
                           </Card.Body>
                         </Card>
                       </div>
@@ -6830,7 +6883,37 @@ const CreateDesignSystem = () => {
                             <h5 className="mb-0">Fingerling (Stage 2) Production</h5>
                           </Card.Header>
                           <Card.Body>
-                            {renderProductionData(stage3Report.stage2, 'Stage 2')}
+                            {renderProductionData(
+                              stage3Report.stage2,
+                              'Stage 2',
+                              [
+                                'W_end_P1',
+                                'BiomassStage1_kg',
+                                'W_end_P2',
+                                'fishEndStage2',
+                                'BiomassStage2_kg',
+                                'cultureDuration_P2',
+                                'BiomassGain_Stage2_kg.day',
+                                'FCR_Stage2',
+                                'FeedRateStage2_kg',
+                                'FeedRateStage2_%',
+                                'FeedRateStage2_percent',
+                                'MaxDensityStage2_kgm3',
+                                'RecDensityStage2_kgm3',
+                              ],
+                              {
+                                'W_end_P1': 'Initial weight',
+                                'BiomassStage1_kg': 'Initial biomass',
+                                'W_end_P2': 'Final weight',
+                                'fishEndStage2': 'Number of fish at end of stage',
+                                'BiomassStage2_kg': 'Final tank biomass',
+                                'cultureDuration_P2': 'Time in stage 2',
+                                'BiomassGain_Stage2_kg.day': 'Biomass gain per day',
+                                'FCR_Stage2': 'FCR',
+                                'MaxDensityStage2_kgm3': 'Max stocking density',
+                                'RecDensityStage2_kgm3': 'Recommended stocking density (50% max)'
+                              }
+                            )}
                           </Card.Body>
                         </Card>
                       </div>
@@ -6842,7 +6925,37 @@ const CreateDesignSystem = () => {
                             <h5 className="mb-0">Growout (Stage 3) Production</h5>
                           </Card.Header>
                           <Card.Body>
-                            {renderProductionData(stage3Report.stage3, 'Stage 3')}
+                            {renderProductionData(
+                              stage3Report.stage3,
+                              'Stage 3',
+                              [
+                                'W_end_P2',
+                                'BiomassStage2_kg',
+                                'W_end_P3',
+                                'HarvestWeekly_fish',
+                                'cultureDuration_P3',
+                                'BiomassStage3_kg',
+                                'BiomassGain_Stage3_kg.day',
+                                'FCR_Stage3',
+                                'FeedRateStage3_kg',
+                                'FeedRateStage3_percent',
+                                'FeedRateStage3_%',
+                                'MaxDensityStage3_kgm3',
+                                'RecDensityStage3_kgm3',
+                              ],
+                              {
+                                'W_end_P2': 'Initial weight',
+                                'BiomassStage2_kg': 'Initial biomass',
+                                'W_end_P3': 'Final weight',
+                                'HarvestWeekly_fish': 'Number of fish at end of stage',
+                                'cultureDuration_P3': 'Time in stage 3',
+                                'BiomassStage3_kg': 'Final tank biomass',
+                                'BiomassGain_Stage3_kg.day': 'Biomass gain per day',
+                                'FCR_Stage3': 'FCR',
+                                'MaxDensityStage3_kgm3': 'Max stocking density',
+                                'RecDensityStage3_kgm3': 'Recommended stocking density (50% max)'
+                              }
+                            )}
                           </Card.Body>
                         </Card>
                       </div>

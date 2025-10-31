@@ -9,6 +9,7 @@ import { getAllDesignSystems } from '../services/designSystemService.jsx';
 import { deleteProject } from '../services/projectService.jsx';
 import { useNavigate } from 'react-router-dom';
 import { generateMassBalanceCardsPdf, generateAdvancedReportPdf, generateStage7ReportPdf, generateCompleteAdvancedReportPdf, generateBasicCompleteReportPdf } from '../utils/pdfGenerator';
+import { getWaterQualityParameters } from '../services/designSystemService.jsx';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import Toast from '../components/Toast';
@@ -234,6 +235,16 @@ const Reports = () => {
       targetNumFish: 1000,
       feedRate: 2,
       feedProtein: 40,
+      // Provide defaults so Stage-wise section renders
+      FCR_Stage1: 0,
+      FCR_Stage2: 0,
+      FCR_Stage3: 0,
+      FeedProtein_Stage1: 0,
+      FeedProtein_Stage2: 0,
+      FeedProtein_Stage3: 0,
+      Estimated_mortality_Stage1: 0,
+      Estimated_mortality_Stage2: 0,
+      Estimated_mortality_Stage3: 0,
       o2Absorption: 80,
       co2Removal: 70,
       tssRemoval: 80,
@@ -252,13 +263,20 @@ const Reports = () => {
 
       if (inputsResponse.ok) {
         const inputsData = await inputsResponse.json();
+        console.debug('Basic view water-quality parameters:', inputsData);
         const p = inputsData.parameters || {};
+        const pick = (obj, keys, def = 0) => {
+          for (const k of keys) {
+            if (obj[k] !== undefined && obj[k] !== null) return obj[k];
+          }
+          return def;
+        };
         inputs = {
           waterTemp: p.temperature ?? 25,
           salinity: p.salinity ?? 0,
           siteElevation: p.elevation_m ?? 0,
           minDO: p.dissolved_O2_min ?? 6,
-          ph: p.pH ?? 7,
+          ph: (p.ph ?? p.pH ?? 7),
           maxCO2: p.dissolved_CO2_max ?? 10,
           maxTAN: p.TAN_max ?? 1,
           minTSS: p.TSS_max ?? 20,
@@ -279,7 +297,17 @@ const Reports = () => {
           targetMinO2Saturation: p.target_min_o2_saturation ?? 0,
           productionTarget_t: p.production_target_t ?? 0,
           harvestFrequency: p.harvest_frequency ?? '',
-          initialWeight: p.initial_weight_wi_g ?? 0
+          initialWeight: p.initial_weight_wi_g ?? 0,
+          // Stage-wise parameters - try multiple naming variants
+          FCR_Stage1: pick(p, ['fcr_stage1', 'FCR_Stage1', 'fcrStage1'], 0),
+          FCR_Stage2: pick(p, ['fcr_stage2', 'FCR_Stage2', 'fcrStage2'], 0),
+          FCR_Stage3: pick(p, ['fcr_stage3', 'FCR_Stage3', 'fcrStage3'], 0),
+          FeedProtein_Stage1: pick(p, ['feed_protein_stage1', 'FeedProtein_Stage1', 'feedProteinStage1'], 0),
+          FeedProtein_Stage2: pick(p, ['feed_protein_stage2', 'FeedProtein_Stage2', 'feedProteinStage2'], 0),
+          FeedProtein_Stage3: pick(p, ['feed_protein_stage3', 'FeedProtein_Stage3', 'feedProteinStage3'], 0),
+          Estimated_mortality_Stage1: pick(p, ['estimated_mortality_stage1', 'Estimated_mortality_Stage1', 'mortality_stage1'], 0),
+          Estimated_mortality_Stage2: pick(p, ['estimated_mortality_stage2', 'Estimated_mortality_Stage2', 'mortality_stage2'], 0),
+          Estimated_mortality_Stage3: pick(p, ['estimated_mortality_stage3', 'Estimated_mortality_Stage3', 'mortality_stage3'], 0)
         };
       }
     } catch (error) {
@@ -588,6 +616,16 @@ const Reports = () => {
       throw new Error(`Failed to fetch calculations: ${response.status}`);
     }
     const calcData = await response.json();
+    // Fetch full input parameters to populate stage-wise fields
+    let paramsData = null;
+    try {
+      const waterRes = await getWaterQualityParameters(report.id);
+      if (waterRes.status === 'success') {
+        paramsData = waterRes.data?.parameters || null;
+      }
+    } catch (e) {
+      console.warn('Failed to fetch water quality parameters for basic report:', e);
+    }
     const outputs = {
       oxygen: {
         bestInletMgL: calcData.o2_saturation_adjusted?.value || calcData.o2_saturation_adjusted_mg_l || 0,
@@ -617,25 +655,41 @@ const Reports = () => {
         MAXTAN_use: calcData.max_tan_use_mg_l ?? null
       }
     };
+    const p = paramsData || {};
     const inputs = {
-      waterTemp: 25,
-      salinity: 0,
-      siteElevation: 0,
-      minDO: 6,
-      pH: 7,
-      maxCO2: 10,
-      maxTAN: 1,
-      minTSS: 20,
-      tankVolume: 100,
-      numTanks: 1,
-      targetFishWeight: 500,
-      targetNumFish: 1000,
-      feedRate: 2,
-      feedProtein: 40,
-      o2Absorption: 80,
-      co2Removal: 70,
-      tssRemoval: 80,
-      tanRemoval: 60,
+      // Water quality
+      waterTemp: p.temperature ?? 25,
+      salinity: p.salinity ?? 0,
+      siteElevation: p.elevation_m ?? 0,
+      minDO: p.dissolved_O2_min ?? 6,
+      pH: (p.ph ?? 7),
+      maxCO2: p.dissolved_CO2_max ?? 10,
+      maxTAN: p.TAN_max ?? 1,
+      minTSS: p.TSS_max ?? 20,
+      // Production
+      tankVolume: p.tanks_volume_each ?? 100,
+      numTanks: p.number_of_tanks ?? 1,
+      targetFishWeight: p.target_market_fish_size ?? 500,
+      targetNumFish: p.target_max_stocking_density ?? 1000,
+      feedRate: p.target_feed_rate ?? 2,
+      feedProtein: p.feed_protein_percent ?? 40,
+      feedConversionRatio: p.feed_conversion_ratio ?? 0,
+      // Efficiency
+      o2Absorption: p.oxygen_injection_efficiency ?? 80,
+      co2Removal: p.co2_removal_efficiency ?? 70,
+      tssRemoval: p.tss_removal_efficiency ?? 80,
+      tanRemoval: p.tan_removal_efficiency ?? 60,
+      // Stage-wise
+      FCR_Stage1: p.fcr_stage1 ?? 0,
+      FCR_Stage2: p.fcr_stage2 ?? 0,
+      FCR_Stage3: p.fcr_stage3 ?? 0,
+      FeedProtein_Stage1: p.feed_protein_stage1 ?? 0,
+      FeedProtein_Stage2: p.feed_protein_stage2 ?? 0,
+      FeedProtein_Stage3: p.feed_protein_stage3 ?? 0,
+      Estimated_mortality_Stage1: p.estimated_mortality_stage1 ?? 0,
+      Estimated_mortality_Stage2: p.estimated_mortality_stage2 ?? 0,
+      Estimated_mortality_Stage3: p.estimated_mortality_stage3 ?? 0,
+      // Misc
       targetSpecies: report.species || 'Tilapia'
     };
     
